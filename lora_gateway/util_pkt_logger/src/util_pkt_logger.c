@@ -37,6 +37,10 @@ Maintainer: Sylvain Miermont
 #include "parson.h"
 #include "loragw_hal.h"
 
+/* CONSTANT ID */
+#define ROUTER_ID "0200000000EEFFC0"
+#define DEVICE_ID "0123456789ABCDEF"
+
 /* -------------------------------------------------------------------------- */
 /* --- PRIVATE MACROS ------------------------------------------------------- */
 
@@ -73,6 +77,8 @@ int parse_gateway_configuration(const char * conf_file);
 void open_log(void);
 
 void usage (void);
+
+bool compare_id(struct lgw_pkt_rx_s*);
 
 /* -------------------------------------------------------------------------- */
 /* --- PRIVATE FUNCTIONS DEFINITION ----------------------------------------- */
@@ -358,6 +364,33 @@ void usage(void) {
 	printf( " -r <int> rotate log file every N seconds (-1 disable log rotation)\n");
 }
 
+/*compare router id and device id */
+bool compare_id(struct lgw_pkt_rx_s *p){
+	int j;
+	char router_id[16+1];
+	char device_id[16+1];
+	if(p->status == STAT_CRC_OK){
+		for (j = 1; j <= 8; ++j) {
+			sprintf(router_id + 2*(j-1), "%02X", p->payload[j]);
+		}		
+		for (j = 9; j <= 16; ++j) {
+			sprintf(device_id + 2*(j-9), "%02X", p->payload[j]);
+		}		
+	}
+	if(!strcmp(device_id,DEVICE_ID) && !strcmp(router_id,ROUTER_ID) && (p->status == STAT_CRC_OK)){		
+		/*
+		 * Debug
+		 * 
+		 * MSG("Application router : %s \n", router_id);
+		 * MSG("Device router : %s \n", device_id);
+		 * 
+		 * */
+		return true;
+	}else{		
+		return false;
+	}
+}
+
 /* -------------------------------------------------------------------------- */
 /* --- MAIN FUNCTION -------------------------------------------------------- */
 
@@ -479,6 +512,11 @@ int main(int argc, char **argv)
 		for (i=0; i < nb_pkt; ++i) {
 			p = &rxpkt[i];
 			
+			if(compare_id(p)){
+				//send_join_response(p);
+			}
+		
+			
 			/* writing gateway ID */
 			fprintf(log_file, "\"%08X%08X\",", (uint32_t)(lgwm >> 32), (uint32_t)(lgwm & 0xFFFFFFFF));
 			
@@ -559,6 +597,8 @@ int main(int argc, char **argv)
 				case CR_UNDEFINED:	fputs("\"\"   ,", log_file); break;
 				default: fputs("\"ERR\",", log_file);
 			}
+
+		
 			
 			/* writing packet RSSI */
 			fprintf(log_file, "%+.0f,", p->rssi);
