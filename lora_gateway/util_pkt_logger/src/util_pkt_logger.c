@@ -37,9 +37,14 @@ Maintainer: Sylvain Miermont
 #include "parson.h"
 #include "loragw_hal.h"
 
-/* CONSTANT ID */
+/* CONSTANTS */
+
 #define ROUTER_ID "0200000000EEFFC0"
 #define DEVICE_ID "0123456789ABCDEF"
+
+#define JOIN_RESPONSE_FREQ 869525000 // 869.525 MHz 
+#define JOIN_RESPONSE_DELAY 6000000 // 6 seconds in us
+#define JOIN_RF_CHAIN 0
 
 /* -------------------------------------------------------------------------- */
 /* --- PRIVATE MACROS ------------------------------------------------------- */
@@ -391,6 +396,30 @@ bool compare_id(struct lgw_pkt_rx_s *p){
 	}
 }
 
+void send_join_response(struct lgw_pkt_rx_s* received) {
+ 
+	struct lgw_pkt_tx_s join_response;
+
+	join_response.freq_hz = JOIN_RESPONSE_FREQ;
+	join_response.tx_mode = TIMESTAMPED;
+	join_response.count_us = received->count_us + JOIN_RESPONSE_DELAY;
+	join_response.rf_chain = received->rf_chain;
+	join_response.rf_power = JOIN_RF_CHAIN;
+	join_response.modulation = MOD_LORA;
+	join_response.bandwidth = BW_125KHZ;
+	join_response.datarate = DR_LORA_SF12;
+	join_response.coderate = CR_LORA_4_5;
+	join_response.invert_pol = false;
+	// join_response.f_dev: only for FSK 
+	join_response.preamble = 0; 
+	join_response.no_crc = false;
+	join_response.no_header = false;
+	join_response.size = 0;
+	//strcpy(join_response.payload, "payload");
+
+	lgw_send(join_response);
+}
+
 /* -------------------------------------------------------------------------- */
 /* --- MAIN FUNCTION -------------------------------------------------------- */
 
@@ -512,11 +541,10 @@ int main(int argc, char **argv)
 		for (i=0; i < nb_pkt; ++i) {
 			p = &rxpkt[i];
 			
-			if(compare_id(p)){
-				//send_join_response(p);
+			if (compare_id(p)) {
+				send_join_response(p);
 			}
 		
-			
 			/* writing gateway ID */
 			fprintf(log_file, "\"%08X%08X\",", (uint32_t)(lgwm >> 32), (uint32_t)(lgwm & 0xFFFFFFFF));
 			
