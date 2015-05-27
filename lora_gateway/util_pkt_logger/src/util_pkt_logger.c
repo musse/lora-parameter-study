@@ -415,9 +415,10 @@ void send_join_response(struct lgw_pkt_rx_s* received) {
 	join_response.preamble = 0; 
 	join_response.no_crc = false;
 	join_response.no_header = false;
-	join_response.size = 0;
-	//strcpy(join_response.payload, "payload");
-
+	join_response.size = 3;
+	join_response.payload[0]= 0;
+	join_response.payload[1]= 1; 
+	join_response.payload[2]= 2;
 	lgw_send(join_response);
 }
 
