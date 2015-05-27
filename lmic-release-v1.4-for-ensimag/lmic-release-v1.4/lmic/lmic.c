@@ -679,7 +679,7 @@ static void setBcnRxParams (void) {
     LMIC.rps  = setIh(setNocrc(dndr2rps((dr_t)DR_BCN),1),LEN_BCN);
 }
 
-#define setRx1Params() /*LMIC.freq/rps remain unchanged*/
+//#define setRx1Params() /*LMIC.freq/rps remain unchanged*/
 
 static void initJoinLoop (void) {
     LMIC.txChnl = os_getRndU1() % 6;
@@ -829,14 +829,6 @@ static void setBcnRxParams (void) {
     LMIC.rps  = setIh(setNocrc(dndr2rps((dr_t)DR_BCN),1),LEN_BCN);
 }
 
-#define setRx1Params() {                                                \
-    LMIC.freq = US915_500kHz_DNFBASE + (LMIC.txChnl & 0x7) * US915_500kHz_DNFSTEP; \
-    if( /* TX datarate */LMIC.dndr < DR_SF8C )                          \
-        LMIC.dndr += DR_SF10CR - DR_SF10;                               \
-    else if( LMIC.dndr == DR_SF8C )                                     \
-        LMIC.dndr = DR_SF7CR;                                           \
-    LMIC.rps = dndr2rps(LMIC.dndr);                                     \
-}
 
 static void initJoinLoop (void) {
     LMIC.chRnd = 0;
@@ -1265,22 +1257,6 @@ static void setupRx2 (void) {
 }
 
 
-static void schedRx2 (ostime_t delay, osjobcb_t func) {
-    // Add 1.5 symbols we need 5 out of 8. Try to sync 1.5 symbols into the preamble.
-    LMIC.rxtime = LMIC.txend + delay + (PAMBL_SYMS-MINRX_SYMS)*dr2hsym(LMIC.dn2Dr);
-    os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
-}
-
-static void setupRx1 (osjobcb_t func) {
-    LMIC.txrxFlags = TXRX_DNW1;
-    // Turn LMIC.rps from TX over to RX
-    LMIC.rps = setNocrc(LMIC.rps,1);
-    LMIC.dataLen = 0;
-    LMIC.osjob.func = func;
-    os_radio(RADIO_RX);
-}
-
-
 // Called by HAL once TX complete and delivers exact end of TX time stamp in LMIC.rxtime
 static void txDone (ostime_t delay, osjobcb_t func) {
     if( (LMIC.opmode & (OP_TRACK|OP_PINGABLE|OP_PINGINI)) == (OP_TRACK|OP_PINGABLE) ) {
@@ -1288,7 +1264,7 @@ static void txDone (ostime_t delay, osjobcb_t func) {
         LMIC.opmode |= OP_PINGINI;
     }
     // Change RX frequency / rps (US only) before we increment txChnl
-    setRx1Params();
+    // setRx1Params(); ----- SUPPRESSION DU RX1 ------
     // LMIC.rxsyms carries the TX datarate (can be != LMIC.datarate [confirm retries etc.])
     // Setup receive - LMIC.rxtime is preloaded with 1.5 symbols offset to tune
     // into the middle of the 8 symbols preamble.
@@ -1431,7 +1407,7 @@ static void processRx2Jacc (xref2osjob_t osjob) {
     	debug_buf(LMIC.frame + LMIC.dataBeg, LMIC.dataLen);
   	}
 
-    //processJoinAccept();
+   //processJoinAccept();
 }
 
 
@@ -1440,20 +1416,58 @@ static void setupRx2Jacc (xref2osjob_t osjob) {
     setupRx2();
 }
 
+/*
+-------------SUPPRESSION DU RX1---------------------
+
+#define setRx1Params() {                                                \
+    LMIC.freq = US915_500kHz_DNFBASE + (LMIC.txChnl & 0x7) * US915_500kHz_DNFSTEP; \
+    if( LMIC.dndr < DR_SF8C )                          \
+        LMIC.dndr += DR_SF10CR - DR_SF10;                               \
+    else if( LMIC.dndr == DR_SF8C )                                     \
+        LMIC.dndr = DR_SF7CR;                                           \
+    LMIC.rps = dndr2rps(LMIC.dndr);                                     \
+}
+
+static void schedRx2 (ostime_t delay, osjobcb_t func) {
+    // Add 1.5 symbols we need 5 out of 8. Try to sync 1.5 symbols into the preamble.
+    LMIC.rxtime = LMIC.txend + delay + (PAMBL_SYMS-MINRX_SYMS)*dr2hsym(LMIC.dn2Dr);
+    os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
+}
+
+
+static void setupRx1 (osjobcb_t func) {
+    LMIC.txrxFlags = TXRX_DNW1;
+    // Turn LMIC.rps from TX over to RX
+    LMIC.rps = setNocrc(LMIC.rps,1);
+    LMIC.dataLen = 0;
+    LMIC.osjob.func = func;
+    os_radio(RADIO_RX);
+}
 
 static void processRx1Jacc (xref2osjob_t osjob) {
+   debug_str("processRx1 \r\n");
     if( LMIC.dataLen == 0 || !processJoinAccept() )
         schedRx2(DELAY_JACC2_osticks, FUNC_ADDR(setupRx2Jacc));
 }
-
 
 static void setupRx1Jacc (xref2osjob_t osjob) {
     setupRx1(FUNC_ADDR(processRx1Jacc));
 }
 
 
+static void processRx1DnData (xref2osjob_t osjob) {
+    if( LMIC.dataLen == 0 || !processDnData() )
+        schedRx2(DELAY_DNW2_osticks, FUNC_ADDR(setupRx2DnData));
+}
+
+
+static void setupRx1DnData (xref2osjob_t osjob) {
+    setupRx1(FUNC_ADDR(processRx1DnData));
+}
+*/
+
 static void jreqDone (xref2osjob_t osjob) {
-    txDone(DELAY_JACC1_osticks, FUNC_ADDR(setupRx1Jacc));
+    txDone(DELAY_JACC2_osticks, FUNC_ADDR(setupRx2Jacc));
 }
 
 // ======================================== Data frames
@@ -1467,7 +1481,6 @@ static void processRx2DnDataDelay (xref2osjob_t osjob) {
 
 static void processRx2DnData (xref2osjob_t osjob) {
     if( LMIC.dataLen == 0 ) {
-      //  debug_str("Empty Message");
         LMIC.txrxFlags = 0;  // nothing in 1st/2nd DN slot
         // Delay callback processing to avoid up TX while gateway is txing our missed frame! 
         // Since DNW2 uses SF12 by default we wait 3 secs.
@@ -1476,7 +1489,6 @@ static void processRx2DnData (xref2osjob_t osjob) {
                             processRx2DnDataDelay);
         return;
     }
-    //debug_str("Non Empty Message");
     processDnData();
 }
 
@@ -1487,19 +1499,9 @@ static void setupRx2DnData (xref2osjob_t osjob) {
 }
 
 
-static void processRx1DnData (xref2osjob_t osjob) {
-    if( LMIC.dataLen == 0 || !processDnData() )
-        schedRx2(DELAY_DNW2_osticks, FUNC_ADDR(setupRx2DnData));
-}
-
-
-static void setupRx1DnData (xref2osjob_t osjob) {
-    setupRx1(FUNC_ADDR(processRx1DnData));
-}
-
 
 static void updataDone (xref2osjob_t osjob) {
-    txDone(DELAY_DNW1_osticks, FUNC_ADDR(setupRx1DnData));
+    txDone(DELAY_DNW2_osticks, FUNC_ADDR(setupRx2DnData));
 }
 
 // ======================================== 
