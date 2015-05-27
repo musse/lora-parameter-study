@@ -1417,21 +1417,23 @@ static bit_t processJoinAccept (void) {
 
 static void processRx2Jacc (xref2osjob_t osjob) {
 	
-	debug_str("Entered processRx2Jacc()\r\n");  
-	debug_val("LMIC.datalen = ", LMIC.dataLen);
+    debug_str("Entered processRx2Jacc()\r\n");  
+    debug_val("LMIC.datalen = ", LMIC.dataLen);
     debug_val("LMIC.dn2Freq = ", LMIC.dn2Freq);
     debug_val("LMIC.rxtime = ", LMIC.rxtime);
     debug_val("LMIC.datarate = ", LMIC.datarate);
         
-	if (LMIC.dataLen == 0) {
+      if (LMIC.dataLen == 0) {
     	debug_str("No message received or empty message"); 
     	LMIC.txrxFlags = 0;  // nothing in 1st/2nd DN slot
   	} else {
-    	debug_str("Received a message not empty:");
-    	debug_buf(LMIC.frame + LMIC.dataBeg, LMIC.dataLen);
-  	}
+          debug_str("Received a message not empty:");
+          debug_buf(LMIC.frame + LMIC.dataBeg, LMIC.dataLen);
+          //processJoinAccept();
+          reportEvent(EV_RXCOMPLETE);
+	}
 
-    //processJoinAccept();
+    
 }
 
 
@@ -1467,7 +1469,6 @@ static void processRx2DnDataDelay (xref2osjob_t osjob) {
 
 static void processRx2DnData (xref2osjob_t osjob) {
     if( LMIC.dataLen == 0 ) {
-      //  debug_str("Empty Message");
         LMIC.txrxFlags = 0;  // nothing in 1st/2nd DN slot
         // Delay callback processing to avoid up TX while gateway is txing our missed frame! 
         // Since DNW2 uses SF12 by default we wait 3 secs.
@@ -1476,7 +1477,6 @@ static void processRx2DnData (xref2osjob_t osjob) {
                             processRx2DnDataDelay);
         return;
     }
-    //debug_str("Non Empty Message");
     processDnData();
 }
 
