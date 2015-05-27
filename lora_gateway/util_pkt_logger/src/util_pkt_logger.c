@@ -400,7 +400,7 @@ bool compare_id(struct lgw_pkt_rx_s *p){
 void send_join_response(struct lgw_pkt_rx_s* received) {
  
 	struct lgw_pkt_tx_s join_response;
-
+	
 	join_response.freq_hz = JOIN_RESPONSE_FREQ;
 	join_response.tx_mode = TIMESTAMPED;
 	join_response.count_us = received->count_us + JOIN_RESPONSE_DELAY;
@@ -410,9 +410,9 @@ void send_join_response(struct lgw_pkt_rx_s* received) {
 	join_response.bandwidth = BW_125KHZ;
 	join_response.datarate = DR_LORA_SF12;
 	join_response.coderate = CR_LORA_4_5;
-	join_response.invert_pol = false;
+	join_response.invert_pol = true;
 	// join_response.f_dev: only for FSK 
-	join_response.preamble = 0; 
+	join_response.preamble = 8; 
 	join_response.no_crc = false;
 	join_response.no_header = false;
 	join_response.size = 3;
