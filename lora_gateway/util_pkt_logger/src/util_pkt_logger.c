@@ -45,6 +45,7 @@ Maintainer: Sylvain Miermont
 #define JOIN_RESPONSE_FREQ 869525000 // 869.525 MHz 
 #define JOIN_RESPONSE_DELAY 6000000 // 6 seconds in us
 #define JOIN_RF_CHAIN 0
+#define JOIN_RESPONSE_POWER 14
 
 /* -------------------------------------------------------------------------- */
 /* --- PRIVATE MACROS ------------------------------------------------------- */
@@ -403,8 +404,8 @@ void send_join_response(struct lgw_pkt_rx_s* received) {
 	join_response.freq_hz = JOIN_RESPONSE_FREQ;
 	join_response.tx_mode = TIMESTAMPED;
 	join_response.count_us = received->count_us + JOIN_RESPONSE_DELAY;
-	join_response.rf_chain = received->rf_chain;
-	join_response.rf_power = JOIN_RF_CHAIN;
+	join_response.rf_chain = JOIN_RF_CHAIN;
+	join_response.rf_power = JOIN_RESPONSE_POWER;
 	join_response.modulation = MOD_LORA;
 	join_response.bandwidth = BW_125KHZ;
 	join_response.datarate = DR_LORA_SF12;
