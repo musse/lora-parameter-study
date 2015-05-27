@@ -1393,21 +1393,21 @@ static bit_t processJoinAccept (void) {
 
 static void processRx2Jacc (xref2osjob_t osjob) {
 	
-	debug_str("Entered processRx2Jacc()\r\n");  
-	debug_val("LMIC.datalen = ", LMIC.dataLen);
+    debug_str("Entered processRx2Jacc()\r\n");  
+    debug_val("LMIC.datalen = ", LMIC.dataLen);
     debug_val("LMIC.dn2Freq = ", LMIC.dn2Freq);
     debug_val("LMIC.rxtime = ", LMIC.rxtime);
     debug_val("LMIC.datarate = ", LMIC.datarate);
         
-	if (LMIC.dataLen == 0) {
+      if (LMIC.dataLen == 0) {
     	debug_str("No message received or empty message"); 
     	LMIC.txrxFlags = 0;  // nothing in 1st/2nd DN slot
   	} else {
-    	debug_str("Received a message not empty:");
-    	debug_buf(LMIC.frame + LMIC.dataBeg, LMIC.dataLen);
-  	}
-
-   //processJoinAccept();
+          debug_str("Received a message not empty:");
+          debug_buf(LMIC.frame + LMIC.dataBeg, LMIC.dataLen);
+          //processJoinAccept();
+          reportEvent(EV_RXCOMPLETE);
+	}
 }
 
 

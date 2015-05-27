@@ -109,12 +109,11 @@ void onEvent (ev_t ev) {
           break;
           
       // network joined, session established
-      case EV_JOINED:
-          // cancel blink job
-          os_clearCallback(&blinkjob);
-          // switch on LED
-          debug_led(1);
-          // (don't schedule any new actions)
-          break;
+      case EV_RXCOMPLETE:
+      // reset MAC state
+        LMIC_reset();
+    // start joining
+        LMIC_startJoining();
+        break;
     }
 }
