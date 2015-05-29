@@ -111,7 +111,6 @@ void onEvent (ev_t ev) {
     debug_event(ev);
 
     switch(ev) {
-
         // starting to join network
         case EV_JOINING:
             debug_str("Started joining.\r\n");

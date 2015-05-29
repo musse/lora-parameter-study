@@ -48,6 +48,7 @@ DECL_ON_LMIC_EVENT;
 
 
 // Fwd decls.
+
 static void engineUpdate(void);
 static void startScan (void);
 
@@ -1390,7 +1391,6 @@ static bit_t processJoinAccept (void) {
     return 1;
 }
 
-
 static void processRx2Jacc (xref2osjob_t osjob) {
     
     debug_str("Entered processRx2Jacc()\r\n");  
@@ -1410,7 +1410,6 @@ static void processRx2Jacc (xref2osjob_t osjob) {
         reportEvent(EV_JOINED);
     }
 }
-
 
 static void setupRx2Jacc (xref2osjob_t osjob) {
     LMIC.osjob.func = FUNC_ADDR(processRx2Jacc);
@@ -1501,7 +1500,7 @@ static void setupRx2DnData (xref2osjob_t osjob) {
 
 
 
-static void updataDone (xref2osjob_t osjob) {
+static void updataDone (xref2osjob_t osjob) {    
     txDone(DELAY_DNW2_osticks, FUNC_ADDR(setupRx2DnData));
 }
 
@@ -1720,7 +1719,7 @@ static void buildJoinRequest (u1_t ftype) {
 }
 
 static void startJoining (xref2osjob_t osjob) {
-    reportEvent(EV_JOINING);
+  reportEvent(EV_JOINING);
 }
 
 // Start join procedure if not already joined.
@@ -1902,6 +1901,7 @@ static void startRxPing (xref2osjob_t osjob) {
 
 // Decide what to do next for the MAC layer of a device
 static void engineUpdate (void) {
+    
     // Check for ongoing state: scan or TX/RX transaction
     if( (LMIC.opmode & (OP_SCAN|OP_TXRXPEND|OP_SHUTDOWN)) != 0 ) 
         return;
@@ -1926,12 +1926,13 @@ static void engineUpdate (void) {
         // Assuming txChnl points to channel which first becomes available again.
         bit_t jacc = ((LMIC.opmode & (OP_JOINING|OP_REJOIN)) != 0 ? 1 : 0);
         // Find next suitable channel and return availability time
-        if( (LMIC.opmode & OP_NEXTCHNL) != 0 ) {
+        if( (LMIC.opmode & OP_NEXTCHNL) != 0 ) {           
             txbeg = LMIC.txend = nextTx(now);
             LMIC.opmode &= ~OP_NEXTCHNL;
         } else {
             txbeg = LMIC.txend;
         }
+       
         // Delayed TX or waiting for duty cycle?
         if( (LMIC.globalDutyRate != 0 || (LMIC.opmode & OP_RNDTX) != 0)  &&  (txbeg - LMIC.globalDutyAvail) < 0 )
             txbeg = LMIC.globalDutyAvail;
@@ -2111,6 +2112,7 @@ void LMIC_clrTxData (void) {
 
 
 void LMIC_setTxData (void) {
+    
     LMIC.opmode |= OP_TXDATA;
     if( (LMIC.opmode & OP_JOINING) == 0 )
         LMIC.txCnt = 0;             // cancel any ongoing TX/RX retries
