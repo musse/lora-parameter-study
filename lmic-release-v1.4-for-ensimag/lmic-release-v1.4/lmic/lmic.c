@@ -1392,19 +1392,23 @@ static bit_t processJoinAccept (void) {
 
 
 static void processRx2Jacc (xref2osjob_t osjob) {
-	
+    
     debug_str("Entered processRx2Jacc()\r\n");  
     debug_val("LMIC.datalen = ", LMIC.dataLen);
         
-      if (LMIC.dataLen == 0) {
-    	debug_str("Did not receive the join response."); 
-    	LMIC.txrxFlags = 0;  // nothing in 1st/2nd DN slot
-  	} else {
-          debug_str("Received ");
-          debug_buf(LMIC.frame + LMIC.dataBeg, LMIC.dataLen);
-          //processJoinAccept();
-          reportEvent(EV_JOINED);
-	}
+    if (LMIC.dataLen == 0) {
+        debug_str("Did not receive the join response."); 
+        LMIC.txrxFlags = 0;  // nothing in 1st/2nd DN slot
+    } else {
+        debug_str("Received join response:");
+        debug_buf(LMIC.frame + LMIC.dataBeg, LMIC.dataLen);
+        //processJoinAccept();
+        LMIC.devaddr = 1;
+        initDefaultChannels(0);
+        LMIC.opmode &= ~(OP_JOINING|OP_TRACK|OP_REJOIN|OP_TXRXPEND|OP_PINGINI) | OP_NEXTCHNL;
+        stateJustJoined();
+        reportEvent(EV_JOINED);
+    }
 }
 
 
