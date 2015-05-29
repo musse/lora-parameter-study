@@ -93,6 +93,16 @@ static void blinkfunc (osjob_t* j) {
 }
 
 
+void sendNextMessage() {
+    static u1_t numberToSend = 0;
+    LMIC.frame[0] = numberToSend;
+    numberToSend++;
+    debug_val("Sending message: ", numberToSend);
+    // schedule transmission (port 1, datalen 1, no ack requested)
+    LMIC_setTxData2(1, LMIC.frame, 1, 0);
+    // (will be sent as soon as duty cycle permits)
+}
+
 //////////////////////////////////////////////////
 // LMIC EVENT CALLBACK
 //////////////////////////////////////////////////
@@ -102,18 +112,37 @@ void onEvent (ev_t ev) {
 
     switch(ev) {
 
-      // starting to join network
-      case EV_JOINING:
-          // start blinking
-          blinkfunc(&blinkjob);
-          break;
-          
-      // network joined, session established
-      case EV_RXCOMPLETE:
-      // reset MAC state
-        LMIC_reset();
-    // start joining
-        LMIC_startJoining();
-        break;
+        // starting to join network
+        case EV_JOINING:
+            debug_str("Started joining.\r\n");
+            // start blinking
+            blinkfunc(&blinkjob);
+
+            break;
+
+        case EV_JOINED:
+            // join complete
+            debug_str("Joined, sending first message.\r\n");
+            debug_led(1);
+            os_clearCallback(&blinkjob);
+            sendNextMessage();
+
+            break;
+
+        // network joined, session established
+        case EV_TXCOMPLETE:
+
+            if (LMIC.dataLen) { // data received in rx slot after tx
+                debug_str("Received response message:\r\n");
+                debug_buf(LMIC.frame+LMIC.dataBeg, LMIC.dataLen);
+                //debug_str("Sending message.\r\n");
+                //sendNextMessage();
+            } else {
+                // nothing received after sending something
+                debug_str("No message received after sending data, waiting.\r\n");
+            }
+            sendNextMessage();
+
+            break;
     }
 }
