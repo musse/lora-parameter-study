@@ -112,7 +112,7 @@ void onEvent (ev_t ev) {
       case EV_RXCOMPLETE:
       // reset MAC state
         LMIC_reset();
-    // start joining
+        // start joining
         LMIC_startJoining();
         break;
     }
