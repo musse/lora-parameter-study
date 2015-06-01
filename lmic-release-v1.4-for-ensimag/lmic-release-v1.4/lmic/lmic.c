@@ -1643,19 +1643,25 @@ Nous n'avons pas besoin de faire une fonction très générique,
 car elle ne servira uniquement à nos test pour analyser nos résultats.
 On envoie le message exacte que l'on veut, buildDataFrame envoyer des données que l'on ne maitrisait pas.
 */
-static void buildDataFrame2 (void) {
-  int i;
-  for(i=0; i< 8; i++){
-    LMIC.frame[i]=APPEUI[i];
-  }
-     
-  for(i=0; i< 8; i++){
-    LMIC.frame[i+8]=DEVEUI[i];
-  }
-  for(i=0; i< 8; i++){
-    LMIC.frame[23-i]= LMIC.pendTxData[i];
-  }
-  LMIC.dataLen=24;
+static void buildDataFrame2 () {
+  
+  u1_t dlen = LMIC.pendTxLen;
+  int end = 0;
+  // packet status 0 for joining 1 for tx
+  u1_t status = 1;
+  os_copyMem(LMIC.frame, &status, 1);
+  end++;
+   // router ID
+  os_copyMem(LMIC.frame+end, APPEUI, 8);
+  end+=8;
+   // device ID
+  os_copyMem(LMIC.frame+end, DEVEUI, 8);
+  end+=8;
+   // data
+  os_copyMem(LMIC.frame+end, LMIC.pendTxData, dlen);
+  end+=dlen;
+
+  LMIC.dataLen=end;
 }
 
 // Callback from HAL during scan mode or when job timer expires.
@@ -1828,7 +1834,7 @@ static bit_t processDnData (void) {
         reportEvent(EV_TXCOMPLETE);
         // If we haven't heard from NWK in a while although we asked for a sign
         // assume link is dead - notify application and keep going
-        if( LMIC.adrAckReq > LINK_CHECK_DEAD ) {
+       /* if( LMIC.adrAckReq > LINK_CHECK_DEAD ) {
             // We haven't heard from NWK for some time although we
             // asked for a response for some time - assume we're disconnected. Lower DR one notch.
             EV(devCond, ERR, (e_.reason = EV::devCond_t::LINK_DEAD,
@@ -1838,7 +1844,7 @@ static bit_t processDnData (void) {
             LMIC.adrAckReq = LINK_CHECK_CONT;
             LMIC.opmode |= OP_REJOIN|OP_LINKDEAD;
             reportEvent(EV_LINK_DEAD);
-        }
+        }*/
         // If this falls to zero the NWK did not answer our MCMD_BCNI_REQ commands - try full scan
         if( LMIC.bcninfoTries > 0 ) {
             if( (LMIC.opmode & OP_TRACK) != 0 ) {
@@ -2155,7 +2161,7 @@ void LMIC_setTxData (void) {
 
 
 //
-int LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) {
+int LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) { 
     if( dlen > SIZEOFEXPR(LMIC.pendTxData) )
         return -2;
     if( data != (xref2u1_t)0 )

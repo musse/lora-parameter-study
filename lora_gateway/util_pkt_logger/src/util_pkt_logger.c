@@ -43,7 +43,7 @@ Maintainer: Sylvain Miermont
 #define DEVICE_ID "0123456789ABCDEF"
 
 #define JOIN_RESPONSE_FREQ 869525000 // 869.525 MHz 
-#define JOIN_RESPONSE_DELAY 6000000 // 6 seconds in us
+#define JOIN_RESPONSE_DELAY 2000000 // 6 seconds in us
 #define JOIN_RF_CHAIN 0
 #define JOIN_RESPONSE_POWER 14
 
@@ -84,7 +84,7 @@ void open_log(void);
 
 void usage (void);
 
-bool compare_id(struct lgw_pkt_rx_s*);
+int compare_id(struct lgw_pkt_rx_s*);
 
 /* -------------------------------------------------------------------------- */
 /* --- PRIVATE FUNCTIONS DEFINITION ----------------------------------------- */
@@ -371,7 +371,7 @@ void usage(void) {
 }
 
 /*compare router id and device id */
-bool compare_id(struct lgw_pkt_rx_s *p){
+int compare_id(struct lgw_pkt_rx_s *p){
 	int j;
 	char router_id[16+1];
 	char device_id[16+1];
@@ -383,18 +383,29 @@ bool compare_id(struct lgw_pkt_rx_s *p){
 			sprintf(device_id + 2*(j-9), "%02X", p->payload[j]);
 		}		
 	}
-	if(!strcmp(device_id,DEVICE_ID) && !strcmp(router_id,ROUTER_ID) && (p->status == STAT_CRC_OK)){		
-		/*
-		 * Debug
-		 * 
+	if(!strcmp(device_id,DEVICE_ID) && !strcmp(router_id,ROUTER_ID) && (p->status == STAT_CRC_OK) && (p->payload[0]==0)){		
+		/** Debug 
 		 * MSG("Application router : %s \n", router_id);
 		 * MSG("Device router : %s \n", device_id);
-		 * 
 		 * */
-		return true;
-	}else{		
-		return false;
+		return 1;
+	}else if(!strcmp(device_id,DEVICE_ID) && !strcmp(router_id,ROUTER_ID) && (p->status == STAT_CRC_OK) &&(p->payload[0]==1)){
+		return 2;
+	}else{
+		return 0;
 	}
+}
+
+void write_results(float snr, int counter, lgw_pkt_rx_s p){
+	FILE* fichier = NULL;
+
+    fichier = fopen("test.txt", "a");
+
+    if (fichier != NULL)
+    {
+		fputs("yoo",fichier);
+        fclose(fichier); // On ferme le fichier qui a été ouvert
+    }
 }
 
 void send_join_response(struct lgw_pkt_rx_s* received) {
@@ -540,11 +551,20 @@ int main(int argc, char **argv)
 		}
 		
 		/* log packets */
+		float average_snr;
+		int packet_counter==0;
+		
 		for (i=0; i < nb_pkt; ++i) {
 			p = &rxpkt[i];
 			
-			if (compare_id(p)) {
+			if (compare_id(p)==1) {
 				send_join_response(p);
+				packet_counter==0;
+			}else if(compare_id(p)==2){
+				packets_counter++;
+				average_snr+=p->snr;
+			}else if(compare_id(p)==3){
+				write_results(average_snr,packet_counter,&p);
 			}
 		
 			/* writing gateway ID */
