@@ -11,19 +11,11 @@
 
 #include "lmic.h"
 #include "debug.h"
+#include "id.h"
 
 //////////////////////////////////////////////////
 // CONFIGURATION (FOR APPLICATION CALLBACKS BELOW)
 //////////////////////////////////////////////////
-
-// application router ID (LSBF)
-static const u1_t APPEUI[8]  = { 0x02, 0x00, 0x00, 0x00, 0x00, 0xEE, 0xFF, 0xC0 };
-
-// unique device ID (LSBF)
-static const u1_t DEVEUI[8]  = { 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF };
-
-// device-specific AES key (derived from device EUI)
-static const u1_t DEVKEY[16] = { 0xAB, 0x89, 0xEF, 0xCD, 0x23, 0x01, 0x67, 0x45, 0x54, 0x76, 0x10, 0x32, 0xDC, 0xFE, 0x98, 0xBA };
 
 
 //////////////////////////////////////////////////
@@ -93,6 +85,15 @@ static void blinkfunc (osjob_t* j) {
 }
 
 
+void sendNextMessage() {
+    static u1_t numberToSend = 0;
+    numberToSend++;
+    debug_val("Sending message: ", numberToSend);
+    // schedule transmission (port 1, datalen 1, no ack requested)
+    LMIC_setTxData2(1, &numberToSend, 1, 0);
+    // (will be sent as soon as duty cycle permits)
+}
+
 //////////////////////////////////////////////////
 // LMIC EVENT CALLBACK
 //////////////////////////////////////////////////
@@ -101,19 +102,37 @@ void onEvent (ev_t ev) {
     debug_event(ev);
 
     switch(ev) {
+        // starting to join network
+        case EV_JOINING:
+            debug_str("Started joining.\r\n");
+            // start blinking
+            blinkfunc(&blinkjob);
 
-      // starting to join network
-      case EV_JOINING:
-          // start blinking
-          blinkfunc(&blinkjob);
-          break;
-          
-      // network joined, session established
-      case EV_RXCOMPLETE:
-      // reset MAC state
-        LMIC_reset();
-    // start joining
-        LMIC_startJoining();
-        break;
+            break;
+
+        case EV_JOINED:
+            // join complete
+            debug_str("Joined, sending first message.\r\n");
+            debug_led(1);
+            os_clearCallback(&blinkjob);
+            sendNextMessage();
+
+            break;
+
+        // network joined, session established
+        case EV_TXCOMPLETE:
+
+            if (LMIC.dataLen) { // data received in rx slot after tx
+                debug_str("Received response message:\r\n");
+                debug_buf(LMIC.frame+LMIC.dataBeg, LMIC.dataLen);
+                //debug_str("Sending message.\r\n");
+                //sendNextMessage();
+            } else {
+                // nothing received after sending something
+                debug_str("No message received after sending data, waiting.\r\n");
+            }
+            sendNextMessage();
+
+            break;
     }
 }

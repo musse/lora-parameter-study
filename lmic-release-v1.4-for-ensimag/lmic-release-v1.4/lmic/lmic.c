@@ -12,6 +12,7 @@
 //! \file
 #include "lmic.h"
 #include "debug.h"
+#include "../examples/join/id.h"
 
 #if !defined(MINRX_SYMS)
 #define MINRX_SYMS 5
@@ -34,7 +35,7 @@
 #define BCN_WINDOW_osticks     ms2osticks(BCN_WINDOW_ms)
 #define AIRTIME_BCN_osticks    us2osticks(AIRTIME_BCN)
 #if defined(CFG_eu868)
-#define DNW2_SAFETY_ZONE       ms2osticks(3000)
+#define DNW2_SAFETY_ZONE       ms2osticks(50) //3000 de base
 #endif
 #if defined(CFG_us915)
 #define DNW2_SAFETY_ZONE       ms2osticks(750)
@@ -48,6 +49,7 @@ DECL_ON_LMIC_EVENT;
 
 
 // Fwd decls.
+
 static void engineUpdate(void);
 static void startScan (void);
 
@@ -1390,26 +1392,25 @@ static bit_t processJoinAccept (void) {
     return 1;
 }
 
-
 static void processRx2Jacc (xref2osjob_t osjob) {
-	
+    
     debug_str("Entered processRx2Jacc()\r\n");  
     debug_val("LMIC.datalen = ", LMIC.dataLen);
-    debug_val("LMIC.dn2Freq = ", LMIC.dn2Freq);
-    debug_val("LMIC.rxtime = ", LMIC.rxtime);
-    debug_val("LMIC.datarate = ", LMIC.datarate);
         
-      if (LMIC.dataLen == 0) {
-    	debug_str("No message received or empty message"); 
-    	LMIC.txrxFlags = 0;  // nothing in 1st/2nd DN slot
-  	} else {
-          debug_str("Received a message not empty:");
-          debug_buf(LMIC.frame + LMIC.dataBeg, LMIC.dataLen);
-          //processJoinAccept();
-          reportEvent(EV_RXCOMPLETE);
-	}
+    if (LMIC.dataLen == 0) {
+        debug_str("Did not receive the join response."); 
+        LMIC.txrxFlags = 0;  // nothing in 1st/2nd DN slot
+    } else {
+        debug_str("Received join response:");
+        debug_buf(LMIC.frame + LMIC.dataBeg, LMIC.dataLen);
+        //processJoinAccept();
+        LMIC.devaddr = 1;
+        initDefaultChannels(0);
+        LMIC.opmode &= ~(OP_JOINING|OP_TRACK|OP_REJOIN|OP_TXRXPEND|OP_PINGINI) | OP_NEXTCHNL;
+        stateJustJoined();
+        reportEvent(EV_JOINED);
+    }
 }
-
 
 static void setupRx2Jacc (xref2osjob_t osjob) {
     LMIC.osjob.func = FUNC_ADDR(processRx2Jacc);
@@ -1500,7 +1501,7 @@ static void setupRx2DnData (xref2osjob_t osjob) {
 
 
 
-static void updataDone (xref2osjob_t osjob) {
+static void updataDone (xref2osjob_t osjob) {    
     txDone(DELAY_DNW2_osticks, FUNC_ADDR(setupRx2DnData));
 }
 
@@ -1510,7 +1511,6 @@ static void updataDone (xref2osjob_t osjob) {
 static void buildDataFrame (void) {
     bit_t txdata = ((LMIC.opmode & (OP_TXDATA|OP_POLL)) != OP_POLL);
     u1_t dlen = txdata ? LMIC.pendTxLen : 0;
-
     // Piggyback MAC options
     // Prioritize by importance
     int  end = OFF_DAT_OPTS;
@@ -1578,7 +1578,7 @@ static void buildDataFrame (void) {
                               | (LMIC.adrAckReq >= 0 ? FCT_ADRARQ : 0)
                               | (end-OFF_DAT_OPTS));
     os_wlsbf4(LMIC.frame+OFF_DAT_ADDR,  LMIC.devaddr);
-
+ 
     if( LMIC.txCnt == 0 ) {
         LMIC.seqnoUp += 1;
         DO_DEVDB(LMIC.seqnoUp,seqnoUp);
@@ -1601,12 +1601,13 @@ static void buildDataFrame (void) {
             LMIC.frame[OFF_DAT_HDR] = HDR_FTYPE_DCUP | HDR_MAJOR_V1;
             if( LMIC.txCnt == 0 ) LMIC.txCnt = 1;
         }
-        LMIC.frame[end] = LMIC.pendTxPort;
+        LMIC.frame[end] = LMIC.pendTxPort;     
         os_copyMem(LMIC.frame+end+1, LMIC.pendTxData, dlen);
         aes_cipher(LMIC.pendTxPort==0 ? LMIC.nwkKey : LMIC.artKey,
                    LMIC.devaddr, LMIC.seqnoUp-1,
                    /*up*/0, LMIC.frame+end+1, dlen);
     }
+    
     aes_appendMic(LMIC.nwkKey, LMIC.devaddr, LMIC.seqnoUp-1, /*up*/0, LMIC.frame, flen-4);
 
     EV(dfinfo, DEBUG, (e_.deveui  = MAIN::CDEV->getEui(),
@@ -1622,7 +1623,32 @@ static void buildDataFrame (void) {
                        memcpy(&e_.opts[0], LMIC.frame+LORA::OFF_DAT_OPTS, end-LORA::OFF_DAT_OPTS)));
     LMIC.dataLen = flen;
 }
+/**
+On fixe les id dans le fichier id.h
+Nous n'avons pas besoin de faire une fonction très générique,
+car elle ne servira uniquement à nos test pour analyser nos résultats.
+On envoie le message exacte que l'on veut, buildDataFrame envoyer des données que l'on ne maitrisait pas.
+*/
+static void buildDataFrame2 () {
+  
+  u1_t dlen = LMIC.pendTxLen;
+  int end = 0;
+  // pacquets status 0 for joining 1 for tx
+  u1_t status = 1;
+  os_copyMem(LMIC.frame, &status, 1);
+  end++;
+   // router ID
+  os_copyMem(LMIC.frame+end, APPEUI, 8);
+  end+=8;
+   // device ID
+  os_copyMem(LMIC.frame+end, DEVEUI, 8);
+  end+=8;
+   // data
+  os_copyMem(LMIC.frame+end, LMIC.pendTxData, dlen);
+  end+=dlen;
 
+  LMIC.dataLen=end;
+}
 
 // Callback from HAL during scan mode or when job timer expires.
 static void onBcnRx (xref2osjob_t job) {
@@ -1719,7 +1745,7 @@ static void buildJoinRequest (u1_t ftype) {
 }
 
 static void startJoining (xref2osjob_t osjob) {
-    reportEvent(EV_JOINING);
+  reportEvent(EV_JOINING);
 }
 
 // Start join procedure if not already joined.
@@ -1794,7 +1820,7 @@ static bit_t processDnData (void) {
         reportEvent(EV_TXCOMPLETE);
         // If we haven't heard from NWK in a while although we asked for a sign
         // assume link is dead - notify application and keep going
-        if( LMIC.adrAckReq > LINK_CHECK_DEAD ) {
+       /* if( LMIC.adrAckReq > LINK_CHECK_DEAD ) {
             // We haven't heard from NWK for some time although we
             // asked for a response for some time - assume we're disconnected. Lower DR one notch.
             EV(devCond, ERR, (e_.reason = EV::devCond_t::LINK_DEAD,
@@ -1804,7 +1830,7 @@ static bit_t processDnData (void) {
             LMIC.adrAckReq = LINK_CHECK_CONT;
             LMIC.opmode |= OP_REJOIN|OP_LINKDEAD;
             reportEvent(EV_LINK_DEAD);
-        }
+        }*/
         // If this falls to zero the NWK did not answer our MCMD_BCNI_REQ commands - try full scan
         if( LMIC.bcninfoTries > 0 ) {
             if( (LMIC.opmode & OP_TRACK) != 0 ) {
@@ -1925,12 +1951,13 @@ static void engineUpdate (void) {
         // Assuming txChnl points to channel which first becomes available again.
         bit_t jacc = ((LMIC.opmode & (OP_JOINING|OP_REJOIN)) != 0 ? 1 : 0);
         // Find next suitable channel and return availability time
-        if( (LMIC.opmode & OP_NEXTCHNL) != 0 ) {
+        if( (LMIC.opmode & OP_NEXTCHNL) != 0 ) {           
             txbeg = LMIC.txend = nextTx(now);
             LMIC.opmode &= ~OP_NEXTCHNL;
         } else {
             txbeg = LMIC.txend;
         }
+       
         // Delayed TX or waiting for duty cycle?
         if( (LMIC.globalDutyRate != 0 || (LMIC.opmode & OP_RNDTX) != 0)  &&  (txbeg - LMIC.globalDutyAvail) < 0 )
             txbeg = LMIC.globalDutyAvail;
@@ -1980,7 +2007,8 @@ static void engineUpdate (void) {
                     // App code might do some stuff after send unaware of RESET.
                     goto reset;
                 }
-                buildDataFrame();
+                
+                buildDataFrame2();
                 LMIC.osjob.func = FUNC_ADDR(updataDone);
             }
             LMIC.rps    = setCr(updr2rps(txdr), (cr_t)LMIC.errcr);
@@ -2110,6 +2138,7 @@ void LMIC_clrTxData (void) {
 
 
 void LMIC_setTxData (void) {
+    
     LMIC.opmode |= OP_TXDATA;
     if( (LMIC.opmode & OP_JOINING) == 0 )
         LMIC.txCnt = 0;             // cancel any ongoing TX/RX retries
@@ -2118,7 +2147,7 @@ void LMIC_setTxData (void) {
 
 
 //
-int LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) {
+int LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) { 
     if( dlen > SIZEOFEXPR(LMIC.pendTxData) )
         return -2;
     if( data != (xref2u1_t)0 )
