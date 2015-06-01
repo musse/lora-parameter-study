@@ -12,6 +12,7 @@
 //! \file
 #include "lmic.h"
 #include "debug.h"
+#include "../examples/join/id.h"
 
 #if !defined(MINRX_SYMS)
 #define MINRX_SYMS 5
@@ -1510,7 +1511,6 @@ static void updataDone (xref2osjob_t osjob) {
 static void buildDataFrame (void) {
     bit_t txdata = ((LMIC.opmode & (OP_TXDATA|OP_POLL)) != OP_POLL);
     u1_t dlen = txdata ? LMIC.pendTxLen : 0;
-
     // Piggyback MAC options
     // Prioritize by importance
     int  end = OFF_DAT_OPTS;
@@ -1578,7 +1578,7 @@ static void buildDataFrame (void) {
                               | (LMIC.adrAckReq >= 0 ? FCT_ADRARQ : 0)
                               | (end-OFF_DAT_OPTS));
     os_wlsbf4(LMIC.frame+OFF_DAT_ADDR,  LMIC.devaddr);
-
+ 
     if( LMIC.txCnt == 0 ) {
         LMIC.seqnoUp += 1;
         DO_DEVDB(LMIC.seqnoUp,seqnoUp);
@@ -1601,12 +1601,13 @@ static void buildDataFrame (void) {
             LMIC.frame[OFF_DAT_HDR] = HDR_FTYPE_DCUP | HDR_MAJOR_V1;
             if( LMIC.txCnt == 0 ) LMIC.txCnt = 1;
         }
-        LMIC.frame[end] = LMIC.pendTxPort;
+        LMIC.frame[end] = LMIC.pendTxPort;     
         os_copyMem(LMIC.frame+end+1, LMIC.pendTxData, dlen);
         aes_cipher(LMIC.pendTxPort==0 ? LMIC.nwkKey : LMIC.artKey,
                    LMIC.devaddr, LMIC.seqnoUp-1,
                    /*up*/0, LMIC.frame+end+1, dlen);
     }
+    
     aes_appendMic(LMIC.nwkKey, LMIC.devaddr, LMIC.seqnoUp-1, /*up*/0, LMIC.frame, flen-4);
 
     EV(dfinfo, DEBUG, (e_.deveui  = MAIN::CDEV->getEui(),
@@ -1622,7 +1623,26 @@ static void buildDataFrame (void) {
                        memcpy(&e_.opts[0], LMIC.frame+LORA::OFF_DAT_OPTS, end-LORA::OFF_DAT_OPTS)));
     LMIC.dataLen = flen;
 }
-
+/**
+On fixe les id dans le fichier id.h
+Nous n'avons pas besoin de faire une fonction très générique,
+car elle ne servira uniquement à nos test pour analyser nos résultats.
+On envoie le message exacte que l'on veut, buildDataFrame envoyer des données que l'on ne maitrisait pas.
+*/
+static void buildDataFrame2 (void) {
+  int i;
+  for(i=0; i< 8; i++){
+    LMIC.frame[i]=APPEUI[i];
+  }
+     
+  for(i=0; i< 8; i++){
+    LMIC.frame[i+8]=DEVEUI[i];
+  }
+  for(i=0; i< 8; i++){
+    LMIC.frame[23-i]= LMIC.pendTxData[i];
+  }
+  LMIC.dataLen=24;
+}
 
 // Callback from HAL during scan mode or when job timer expires.
 static void onBcnRx (xref2osjob_t job) {
@@ -1901,7 +1921,6 @@ static void startRxPing (xref2osjob_t osjob) {
 
 // Decide what to do next for the MAC layer of a device
 static void engineUpdate (void) {
-    
     // Check for ongoing state: scan or TX/RX transaction
     if( (LMIC.opmode & (OP_SCAN|OP_TXRXPEND|OP_SHUTDOWN)) != 0 ) 
         return;
@@ -1982,7 +2001,8 @@ static void engineUpdate (void) {
                     // App code might do some stuff after send unaware of RESET.
                     goto reset;
                 }
-                buildDataFrame();
+                
+                buildDataFrame2();
                 LMIC.osjob.func = FUNC_ADDR(updataDone);
             }
             LMIC.rps    = setCr(updr2rps(txdr), (cr_t)LMIC.errcr);
