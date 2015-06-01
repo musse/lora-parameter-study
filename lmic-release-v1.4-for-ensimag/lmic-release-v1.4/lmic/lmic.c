@@ -1633,7 +1633,7 @@ static void buildDataFrame2 () {
   
   u1_t dlen = LMIC.pendTxLen;
   int end = 0;
-  // pacquets status 0 for joining 1 for tx
+  // packet status 0 for joining 1 for tx
   u1_t status = 1;
   os_copyMem(LMIC.frame, &status, 1);
   end++;

@@ -384,19 +384,28 @@ int compare_id(struct lgw_pkt_rx_s *p){
 		}		
 	}
 	if(!strcmp(device_id,DEVICE_ID) && !strcmp(router_id,ROUTER_ID) && (p->status == STAT_CRC_OK) && (p->payload[0]==0)){		
-		/*
-		 * Debug
-		 * 
+		/** Debug 
 		 * MSG("Application router : %s \n", router_id);
 		 * MSG("Device router : %s \n", device_id);
-		 * 
 		 * */
 		return 1;
-	}else if(!strcmp(device_id,DEVICE_ID) && !strcmp(router_id,ROUTER_ID) && (p->status == STAT_CRC_OK) &&(p->payload[0]==1)){		
+	}else if(!strcmp(device_id,DEVICE_ID) && !strcmp(router_id,ROUTER_ID) && (p->status == STAT_CRC_OK) &&(p->payload[0]==1)){
 		return 2;
 	}else{
 		return 0;
 	}
+}
+
+void write_results(float snr, int counter, lgw_pkt_rx_s p){
+	FILE* fichier = NULL;
+
+    fichier = fopen("test.txt", "a");
+
+    if (fichier != NULL)
+    {
+		fputs("yoo",fichier);
+        fclose(fichier); // On ferme le fichier qui a été ouvert
+    }
 }
 
 void send_join_response(struct lgw_pkt_rx_s* received) {
@@ -542,13 +551,20 @@ int main(int argc, char **argv)
 		}
 		
 		/* log packets */
+		float average_snr;
+		int packet_counter==0;
+		
 		for (i=0; i < nb_pkt; ++i) {
 			p = &rxpkt[i];
 			
 			if (compare_id(p)==1) {
 				send_join_response(p);
+				packet_counter==0;
 			}else if(compare_id(p)==2){
-				
+				packets_counter++;
+				average_snr+=p->snr;
+			}else if(compare_id(p)==3){
+				write_results(average_snr,packet_counter,&p);
 			}
 		
 			/* writing gateway ID */
