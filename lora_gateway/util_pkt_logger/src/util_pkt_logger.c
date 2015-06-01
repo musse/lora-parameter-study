@@ -43,7 +43,7 @@ Maintainer: Sylvain Miermont
 #define DEVICE_ID "0123456789ABCDEF"
 
 #define JOIN_RESPONSE_FREQ 869525000 // 869.525 MHz 
-#define JOIN_RESPONSE_DELAY 6000000 // 6 seconds in us
+#define JOIN_RESPONSE_DELAY 2000000 // 6 seconds in us
 #define JOIN_RF_CHAIN 0
 #define JOIN_RESPONSE_POWER 14
 
