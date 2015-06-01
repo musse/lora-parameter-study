@@ -371,7 +371,7 @@ void usage(void) {
 }
 
 /*compare router id and device id */
-bool compare_id(struct lgw_pkt_rx_s *p){
+int compare_id(struct lgw_pkt_rx_s *p){
 	int j;
 	char router_id[16+1];
 	char device_id[16+1];
@@ -383,7 +383,7 @@ bool compare_id(struct lgw_pkt_rx_s *p){
 			sprintf(device_id + 2*(j-9), "%02X", p->payload[j]);
 		}		
 	}
-	if(!strcmp(device_id,DEVICE_ID) && !strcmp(router_id,ROUTER_ID) && (p->status == STAT_CRC_OK)){		
+	if(!strcmp(device_id,DEVICE_ID) && !strcmp(router_id,ROUTER_ID) && (p->status == STAT_CRC_OK) && (p->payload[0]==0)){		
 		/*
 		 * Debug
 		 * 
@@ -391,9 +391,11 @@ bool compare_id(struct lgw_pkt_rx_s *p){
 		 * MSG("Device router : %s \n", device_id);
 		 * 
 		 * */
-		return true;
-	}else{		
-		return false;
+		return 1;
+	}else if(!strcmp(device_id,DEVICE_ID) && !strcmp(router_id,ROUTER_ID) && (p->status == STAT_CRC_OK) &&(p->payload[0]==1)){		
+		return 2;
+	}else{
+		return 0;
 	}
 }
 
@@ -543,8 +545,10 @@ int main(int argc, char **argv)
 		for (i=0; i < nb_pkt; ++i) {
 			p = &rxpkt[i];
 			
-			if (compare_id(p)) {
+			if (compare_id(p)==1) {
 				send_join_response(p);
+			}else if(compare_id(p)==2){
+				
 			}
 		
 			/* writing gateway ID */

@@ -87,11 +87,10 @@ static void blinkfunc (osjob_t* j) {
 
 void sendNextMessage() {
     static u1_t numberToSend = 0;
-    LMIC.frame[0] = numberToSend;
     numberToSend++;
     debug_val("Sending message: ", numberToSend);
     // schedule transmission (port 1, datalen 1, no ack requested)
-    LMIC_setTxData2(1, LMIC.frame, 1, 0);
+    LMIC_setTxData2(1, &numberToSend, 1, 0);
     // (will be sent as soon as duty cycle permits)
 }
 
