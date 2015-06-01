@@ -35,7 +35,7 @@
 #define BCN_WINDOW_osticks     ms2osticks(BCN_WINDOW_ms)
 #define AIRTIME_BCN_osticks    us2osticks(AIRTIME_BCN)
 #if defined(CFG_eu868)
-#define DNW2_SAFETY_ZONE       ms2osticks(3000)
+#define DNW2_SAFETY_ZONE       ms2osticks(50) //3000 de base
 #endif
 #if defined(CFG_us915)
 #define DNW2_SAFETY_ZONE       ms2osticks(750)
