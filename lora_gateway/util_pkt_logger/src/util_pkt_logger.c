@@ -84,7 +84,7 @@ void open_log(void);
 
 void usage (void);
 
-bool compare_id(struct lgw_pkt_rx_s*);
+int compare_id(struct lgw_pkt_rx_s*);
 
 /* -------------------------------------------------------------------------- */
 /* --- PRIVATE FUNCTIONS DEFINITION ----------------------------------------- */
