@@ -2020,6 +2020,23 @@ static void engineUpdate (void) {
                     // App code might do some stuff after send unaware of RESET.
                     goto reset;
                 }
+                                
+                if (LMIC.message_type == 1){ //Test Message - The data to be transfered is the parameters used for the test
+                    int end = 0;
+                    os_copyMem(LMIC.pendTxData+end,&LMIC.errcr, sizeof(enum _cr_t));
+                    end += sizeof(u1_t);
+                    
+                    u1_t sf = getSf(LMIC.rps);
+                    os_copyMem(LMIC.pendTxData+end, &sf, sizeof(enum _sf_t));
+                    end += sizeof(u1_t);
+                    
+                    u1_t bw = getBw(LMIC.rps);
+                    os_copyMem(LMIC.pendTxData+end, &bw, sizeof(enum _bw_t));
+                    end += sizeof(s1_t);
+                    
+                    os_copyMem(LMIC.pendTxData+end,&LMIC.txpow, 1); //Power is represented by 1 byte
+                    end += sizeof(s1_t);                    
+                }
                 
                 buildDataFrame2();
                 LMIC.osjob.func = FUNC_ADDR(updataDone);
