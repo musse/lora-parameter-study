@@ -141,6 +141,9 @@ typedef enum _ev_t ev_t;
 
 
 struct lmic_t {
+    // Added by us
+    rps_t tx_rps;
+
     // Radio settings TX/RX (also accessed by HAL)
     ostime_t    txend;
     ostime_t    rxtime;

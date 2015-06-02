@@ -218,6 +218,8 @@ static void aes_sessKeys (u2_t devnonce, xref2cu1_t artnonce, xref2u1_t nwkkey, 
 #define maxFrameLen(dr) ((dr)<=DR_SF9 ? maxFrameLens[(dr)] : 0xFF)
 const u1_t maxFrameLens [] = { 64,64,64,123 };
 
+// enum _dr_eu868_t { DR_SF12=0, DR_SF11, DR_SF10, DR_SF9, DR_SF8, DR_SF7, DR_SF7B, DR_FSK, DR_NONE };
+// each DR from the enum is associated to a RPS in the following:
 const u1_t _DR2RPS_CRC[] = {
     ILLEGAL_RPS,
     (u1_t)MAKERPS(SF12, BW125, CR_4_5, 0, 0),
@@ -2025,7 +2027,11 @@ static void engineUpdate (void) {
                 buildDataFrame2();
                 LMIC.osjob.func = FUNC_ADDR(updataDone);
             }
-            LMIC.rps    = setCr(updr2rps(txdr), (cr_t)LMIC.errcr);
+            //LMIC.rps    = setCr(updr2rps(txdr), (cr_t)LMIC.errcr);
+            /* we don't use updr2rps() so we can define the RPS fields as we want, instead of taking one of the
+            pre-defined options of the array _DR2RPS_CRC[]. Our TX RPS is defined in LMIC.tx_rps, and was set by
+            setTxParameters() */
+            LMIC.rps = LMIC.tx_rps;
             LMIC.dndr   = txdr;  // carry TX datarate (can be != LMIC.datarate) over to txDone/setupRx1
             LMIC.opmode = (LMIC.opmode & ~(OP_POLL|OP_RNDTX)) | OP_TXRXPEND | OP_NEXTCHNL;
             updateTx(txbeg);
@@ -2231,4 +2237,12 @@ void LMIC_setLinkCheckMode (bit_t enabled) {
     LMIC.adrAckReq = enabled ? LINK_CHECK_INIT : LINK_CHECK_OFF;
 }
 
- 
+// Our functions
+
+void setTxParameters (enum _cr_t newErrcr, enum _dr_eu868_t newDr, enum _sf_t newSF, s1_t newPow, enum _bw_t newBw) {
+    LMIC.errcr = newErrcr;
+    LMIC.datarate = newDr;
+    // LMIC.adrTxPow = newPow;
+    LMIC.txpow = newPow;
+    LMIC.tx_rps = MAKERPS(newSF, newBw, newErrcr, 0, 0); // no IH (implicit header), no NOCRC (= with CRC)
+}
