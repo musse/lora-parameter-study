@@ -647,9 +647,16 @@ static void updateTx (ostime_t txbeg) {
 }
 
 static ostime_t nextTx (ostime_t now) {
+
+    // always sending with the same band and channel
+    ostime_t mintime = LMIC.bands[BAND_DECI].avail;
+    LMIC.txChnl = TX_CHANNEL;
+    return mintime;
+    
+    /*
     u1_t bmap=0xF;
     do {
-        ostime_t mintime = now + /*10h*/36000*OSTICKS_PER_SEC;
+        ostime_t mintime = now + 36000*OSTICKS_PER_SEC; // 10h
         u1_t band=0;
         for( u1_t bi=0; bi<4; bi++ ) {
             if( (bmap & (1<<bi)) && mintime - LMIC.bands[bi].avail > 0 )
@@ -672,6 +679,7 @@ static ostime_t nextTx (ostime_t now) {
             return mintime;
         }
     } while(1);
+    */
 }
 
 
@@ -684,6 +692,7 @@ static void setBcnRxParams (void) {
 //#define setRx1Params() /*LMIC.freq/rps remain unchanged*/
 
 static void initJoinLoop (void) {
+    debug_str("initJoinLoop() from line 687 is called.\r\n");
     LMIC.txChnl = os_getRndU1() % 6;
     LMIC.adrTxPow = 14;
     setDrJoin(DRCHG_SET, DR_SF7);
@@ -800,8 +809,11 @@ static void updateTx (ostime_t txbeg) {
     }
 }
 
+/*
 // US does not have duty cycling - return now as earliest TX time
+
 #define nextTx(now) (_nextTx(),(now))
+
 static void _nextTx (void) {
     if( LMIC.chRnd==0 )
         LMIC.chRnd = os_getRndU1() & 0x3F;
@@ -824,6 +836,7 @@ static void _nextTx (void) {
     }
     // No feasible channel  found! Keep old one.
 }
+*/
 
 static void setBcnRxParams (void) {
     LMIC.dataLen = 0;
@@ -833,6 +846,7 @@ static void setBcnRxParams (void) {
 
 
 static void initJoinLoop (void) {
+    debug_str("initJoinLoop() from line 836 is called.\r\n");
     LMIC.chRnd = 0;
     LMIC.txChnl = 0;
     LMIC.adrTxPow = 20;

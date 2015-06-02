@@ -19,6 +19,10 @@
 #include "lorabase.h"
 #include "id.h"
 
+// Constants defined by us
+
+#define TX_CHANNEL 5
+
 // LMIC version
 #define LMIC_VERSION_MAJOR 1
 #define LMIC_VERSION_MINOR 4

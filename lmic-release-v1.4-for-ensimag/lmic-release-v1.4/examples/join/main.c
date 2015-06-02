@@ -116,6 +116,12 @@ void onEvent (ev_t ev) {
             debug_str("Joined, sending first message.\r\n");
             debug_led(1);
             os_clearCallback(&blinkjob);
+
+            // disables all channels but the tx one
+            for (u1_t i = 0; i <= 5; i++)
+                if (i != TX_CHANNEL)
+                    LMIC_disableChannel(i);
+            
             sendNextMessage();
 
             break;
@@ -130,7 +136,7 @@ void onEvent (ev_t ev) {
                 //sendNextMessage();
             } else {
                 // nothing received after sending something
-                debug_str("No message received after sending data, waiting.\r\n");
+                debug_str("No message received after transmission, sending one more message.\r\n");
             }
             sendNextMessage();
 
