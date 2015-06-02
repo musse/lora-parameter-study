@@ -12,7 +12,7 @@
 //! \file
 #include "lmic.h"
 #include "debug.h"
-#include "../examples/join/id.h"
+#include "id.h"
 
 #if !defined(MINRX_SYMS)
 #define MINRX_SYMS 5
@@ -1634,8 +1634,7 @@ static void buildDataFrame2 () {
   u1_t dlen = LMIC.pendTxLen;
   int end = 0;
   // packet status 0 for joining 1 for tx
-  u1_t status = 1;
-  os_copyMem(LMIC.frame, &status, 1);
+  os_copyMem(LMIC.frame, &LMIC.message_type, 1);
   end++;
    // router ID
   os_copyMem(LMIC.frame+end, APPEUI, 8);
