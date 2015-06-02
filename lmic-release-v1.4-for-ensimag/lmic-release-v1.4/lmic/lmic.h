@@ -17,6 +17,11 @@
 
 #include "oslmic.h"
 #include "lorabase.h"
+#include "id.h"
+
+// Constants defined by us
+
+#define TX_CHANNEL 5
 
 // LMIC version
 #define LMIC_VERSION_MAJOR 1
@@ -181,6 +186,7 @@ struct lmic_t {
     u1_t        pendTxConf;   // confirmed data
     u1_t        pendTxLen;    // +0x80 = confirmed
     u1_t        pendTxData[MAX_LEN_PAYLOAD];
+    msg_type_t  message_type;
 
     u2_t        devNonce;     // last generated nonce
     u1_t        nwkKey[16];   // network session key

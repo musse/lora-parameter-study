@@ -89,6 +89,7 @@ void sendNextMessage() {
     static u1_t numberToSend = 0;
     numberToSend++;
     debug_val("Sending message: ", numberToSend);
+    LMIC.message_type=TEST_MESSAGE;
     // schedule transmission (port 1, datalen 1, no ack requested)
     LMIC_setTxData2(1, &numberToSend, 1, 0);
     // (will be sent as soon as duty cycle permits)
@@ -115,6 +116,12 @@ void onEvent (ev_t ev) {
             debug_str("Joined, sending first message.\r\n");
             debug_led(1);
             os_clearCallback(&blinkjob);
+
+            // disables all channels but the tx one
+            for (u1_t i = 0; i <= 5; i++)
+                if (i != TX_CHANNEL)
+                    LMIC_disableChannel(i);
+            
             sendNextMessage();
 
             break;
@@ -129,7 +136,7 @@ void onEvent (ev_t ev) {
                 //sendNextMessage();
             } else {
                 // nothing received after sending something
-                debug_str("No message received after sending data, waiting.\r\n");
+                debug_str("No message received after transmission, sending one more message.\r\n");
             }
             sendNextMessage();
 
