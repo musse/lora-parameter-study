@@ -89,6 +89,7 @@ void sendNextMessage() {
     static u1_t numberToSend = 0;
     numberToSend++;
     debug_val("Sending message: ", numberToSend);
+    LMIC.message_type=TEST_MESSAGE;
     // schedule transmission (port 1, datalen 1, no ack requested)
     LMIC_setTxData2(1, &numberToSend, 1, 0);
     // (will be sent as soon as duty cycle permits)

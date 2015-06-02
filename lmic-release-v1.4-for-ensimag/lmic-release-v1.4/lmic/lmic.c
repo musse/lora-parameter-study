@@ -12,7 +12,7 @@
 //! \file
 #include "lmic.h"
 #include "debug.h"
-#include "../examples/join/id.h"
+#include "id.h"
 
 #if !defined(MINRX_SYMS)
 #define MINRX_SYMS 5
@@ -1650,8 +1650,7 @@ static void buildDataFrame2 () {
   u1_t dlen = LMIC.pendTxLen;
   int end = 0;
   // packet status 0 for joining 1 for tx
-  u1_t status = 1;
-  os_copyMem(LMIC.frame, &status, 1);
+  os_copyMem(LMIC.frame, &LMIC.message_type, 1);
   end++;
    // router ID
   os_copyMem(LMIC.frame+end, APPEUI, 8);
@@ -2022,6 +2021,23 @@ static void engineUpdate (void) {
                     // Do not run RESET event callback from here!
                     // App code might do some stuff after send unaware of RESET.
                     goto reset;
+                }
+                                
+                if (LMIC.message_type == 1){ //Test Message - The data to be transfered is the parameters used for the test
+                    int end = 0;
+                    os_copyMem(LMIC.pendTxData+end,&LMIC.errcr, sizeof(enum _cr_t));
+                    end += sizeof(u1_t);
+                    
+                    u1_t sf = getSf(LMIC.rps);
+                    os_copyMem(LMIC.pendTxData+end, &sf, sizeof(enum _sf_t));
+                    end += sizeof(u1_t);
+                    
+                    u1_t bw = getBw(LMIC.rps);
+                    os_copyMem(LMIC.pendTxData+end, &bw, sizeof(enum _bw_t));
+                    end += sizeof(s1_t);
+                    
+                    os_copyMem(LMIC.pendTxData+end,&LMIC.txpow, 1); //Power is represented by 1 byte
+                    end += sizeof(s1_t);                    
                 }
                 
                 buildDataFrame2();
