@@ -663,7 +663,7 @@ static void setBcnRxParams (void) {
 
 static void initJoinLoop (void) {
     debug_str("initJoinLoop() from line 687 is called.\r\n");
-    LMIC.txChnl = TX_CHANNEL; // os_getRndU1() % 6;
+    LMIC.txChnl = /*TX_CHANNEL;*/ os_getRndU1() % 6;
     LMIC.adrTxPow = 14;
     setDrJoin(DRCHG_SET, DR_SF7);
     initDefaultChannels(1);
@@ -1880,7 +1880,21 @@ static void engineUpdate (void) {
             /* we don't use updr2rps() so we can define the RPS fields as we want, instead of taking one of the
             pre-defined options of the array _DR2RPS_CRC[]. Our TX RPS is defined in LMIC.tx_rps, and was set by
             setTxParameters() */
-            LMIC.rps = LMIC.tx_rps;
+            
+            debug_str("Changing LMIC.rps");
+
+            if ((LMIC.opmode & OP_JOINING) != 0) { // if joining
+                debug_str(" (joining).\r\n");
+                LMIC.rps = setCr(updr2rps(txdr), (cr_t)LMIC.errcr);
+
+            }
+            else {
+                debug_str(" (not joining).\r\n");
+                LMIC.rps = LMIC.tx_rps;
+            }
+            
+            //LMIC.rps = setCr(updr2rps(txdr), (cr_t)LMIC.errcr);
+
             LMIC.dndr   = txdr;  // carry TX datarate (can be != LMIC.datarate) over to txDone/setupRx1
             LMIC.opmode = (LMIC.opmode & ~(OP_POLL|OP_RNDTX)) | OP_TXRXPEND | OP_NEXTCHNL;
             updateTx(txbeg);

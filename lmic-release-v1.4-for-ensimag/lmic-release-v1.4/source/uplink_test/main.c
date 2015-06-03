@@ -90,6 +90,13 @@ static void blinkfunc (osjob_t* j) {
 }
 
 void testPacketSize(){
+
+    static int firstCall = 1;
+
+    if (firstCall) {
+        firstCall = 0;
+        setTxParameters(CR_4_5, DR_SF7, SF7, 14, BW125, EU868_F6);
+    }
     
     if(numberToSend <10){
         numberToSend++;
@@ -303,7 +310,7 @@ void onEvent (ev_t ev) {
                 //sendNextMessage();
             } else {
                 // nothing received after sending something
-                debug_str("No message received after sending data, waiting.\r\n");
+                debug_str("No message received after sending data.\r\n");
             }
             sendNextMessage();            
             break;
