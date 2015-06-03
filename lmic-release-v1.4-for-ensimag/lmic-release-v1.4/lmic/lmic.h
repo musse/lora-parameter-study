@@ -267,6 +267,9 @@ void  LMIC_tryRejoin     (void);
 void LMIC_setSession (u4_t netid, devaddr_t devaddr, xref2u1_t nwkKey, xref2u1_t artKey);
 void LMIC_setLinkCheckMode (bit_t enabled);
 
+void setTxParameters (enum _cr_t newErrcr, enum _dr_eu868_t newDr,
+ enum _sf_t newSF, s1_t newPow, enum _bw_t newBw, u4_t newFreq);
+
 // Special APIs - for development or testing
 // !!!See implementation for caveats!!!
 

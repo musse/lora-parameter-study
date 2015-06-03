@@ -116,7 +116,19 @@ void testBandWidth(){
     if(numberToSend <100){
         numberToSend++;
         // ICI on fixe les paramètres et les data a envoyer selon numerTestChange
-        
+        switch(numberTestChange){
+            case 0 :
+                setTxParameters(CR_4_5, DR_SF7, SF7, 14, BW125, EU868_F6);
+                break;
+            case 1 :
+                setTxParameters(CR_4_5, DR_SF7, SF7, 14, BW250, EU868_F6);
+                break;
+            case 2:
+                setTxParameters(CR_4_5, DR_SF7, SF7, 14, BW500, EU868_F6);
+                break;
+            default :
+                break;
+        }
         LMIC.message_type=TEST_MESSAGE;
         // schedule transmission (port 1, datalen 1, no ack requested)
         LMIC_setTxData2(1, &msgData, 1, 0);
@@ -137,7 +149,7 @@ void testPower(){
      if(numberToSend <100){
         numberToSend++;
         // ICI on fixe les paramètres et les data a envoyer selon numerTestChange
-        
+        setTxParameters(CR_4_5, DR_SF7, SF7, numberTestChange*2+6, BW125, EU868_F6);
         LMIC.message_type=TEST_MESSAGE;
         // schedule transmission (port 1, datalen 1, no ack requested)
         LMIC_setTxData2(1, &msgData, 1, 0);
@@ -148,7 +160,7 @@ void testPower(){
         numberToSend=0;
         // envoi des paramètres du test
         LMIC_setTxData2(1, &msgData, 1, 0);
-        if(numberTestChange==10){
+        if(numberTestChange==8){
             endTest=1;
         }
   }
@@ -158,7 +170,28 @@ void testSpreadingFactor(){
     if(numberToSend <100){
         numberToSend++;
         // ICI on fixe les paramètres et les data a envoyer selon numerTestChange
-        
+        switch(numberTestChange){
+            case 0 :
+                setTxParameters(CR_4_5, DR_SF7, SF7, 14, BW125, EU868_F6);
+                break;
+            case 1 :
+                setTxParameters(CR_4_5, DR_SF8, SF8, 14, BW125, EU868_F6);
+                break;
+            case 2:
+                setTxParameters(CR_4_5, DR_SF9, SF9, 14, BW125, EU868_F6);
+                break;
+            case 3:
+                setTxParameters(CR_4_5, DR_SF10, SF10, 14, BW125, EU868_F6);
+                break;
+            case 4:
+                setTxParameters(CR_4_5, DR_SF11, SF11, 14, BW125, EU868_F6);
+                break;
+            case 5:
+                setTxParameters(CR_4_5, DR_SF12, SF12, 14, BW125, EU868_F6);
+                break;
+            default :
+                break;
+        }
         LMIC.message_type=TEST_MESSAGE;
         // schedule transmission (port 1, datalen 1, no ack requested)
         LMIC_setTxData2(1, &msgData, 1, 0);
@@ -179,7 +212,22 @@ void testCodingRate(){
     if(numberToSend <100){
         numberToSend++;
         // ICI on fixe les paramètres et les data a envoyer selon numerTestChange
-
+         switch(numberTestChange){
+            case 0 :
+                setTxParameters(CR_4_5, DR_SF7, SF7, 14, BW125, EU868_F6);
+                break;
+            case 1 :
+                setTxParameters(CR_4_6, DR_SF7, SF7, 14, BW125, EU868_F6);
+                break;
+            case 2:
+                setTxParameters(CR_4_7, DR_SF7, SF7, 14, BW125, EU868_F6);
+                break;
+            case 3:
+                setTxParameters(CR_4_8, DR_SF7, SF7, 14, BW125, EU868_F6);
+                break;
+            default :
+                break;
+        }
         LMIC.message_type=TEST_MESSAGE;
         // schedule transmission (port 1, datalen 1, no ack requested)
         LMIC_setTxData2(1, &msgData, 1, 0);
