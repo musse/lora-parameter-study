@@ -2021,8 +2021,8 @@ static void engineUpdate (void) {
                     goto reset;
                 }
                                 
-                if (LMIC.message_type == 2){ //Test Message - The data to be transfered is the parameters used for the test
-                    //debug_str("xxxxxxxxxxxxxx");
+                if (LMIC.message_type == 2){ //End Message - The data to be transfered is the parameters used for the test
+                    
                     int end = 0;
                     os_copyMem(LMIC.pendTxData+end,&LMIC.errcr, sizeof(enum _cr_t));
                     end += sizeof(u1_t);
@@ -2052,7 +2052,7 @@ static void engineUpdate (void) {
                     debug_val("LMIC.BW = ", *(LMIC.pendTxData+2*sizeof(s1_t)));
                     
                     debug_val("LMIC.pow = ", *(LMIC.pendTxData+3*sizeof(s1_t)));
-                    
+                    LMIC.pendTxLen = end; 
                     
                 }
                 
