@@ -142,6 +142,10 @@ typedef enum _ev_t ev_t;
 
 
 struct lmic_t {
+    // Added by us
+    rps_t tx_rps;
+    msg_type_t  message_type;
+
     // Radio settings TX/RX (also accessed by HAL)
     ostime_t    txend;
     ostime_t    rxtime;
@@ -186,7 +190,6 @@ struct lmic_t {
     u1_t        pendTxConf;   // confirmed data
     u1_t        pendTxLen;    // +0x80 = confirmed
     u1_t        pendTxData[MAX_LEN_PAYLOAD];
-    msg_type_t  message_type;
 
     u2_t        devNonce;     // last generated nonce
     u1_t        nwkKey[16];   // network session key
@@ -263,6 +266,9 @@ void  LMIC_tryRejoin     (void);
 
 void LMIC_setSession (u4_t netid, devaddr_t devaddr, xref2u1_t nwkKey, xref2u1_t artKey);
 void LMIC_setLinkCheckMode (bit_t enabled);
+
+void setTxParameters (enum _cr_t newErrcr, enum _dr_eu868_t newDr,
+ enum _sf_t newSF, s1_t newPow, enum _bw_t newBw, u4_t newFreq);
 
 // Special APIs - for development or testing
 // !!!See implementation for caveats!!!
