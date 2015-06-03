@@ -391,19 +391,73 @@ int compare_id(struct lgw_pkt_rx_s *p){
 		return 1;
 	}else if(!strcmp(device_id,DEVICE_ID) && !strcmp(router_id,ROUTER_ID) && (p->status == STAT_CRC_OK) &&(p->payload[0]==1)){
 		return 2;
+	}else if(!strcmp(device_id,DEVICE_ID) && !strcmp(router_id,ROUTER_ID) && (p->status == STAT_CRC_OK) &&(p->payload[0]==2)){
+		return 3;
 	}else{
 		return 0;
 	}
 }
 
-void write_results(float snr, int counter, lgw_pkt_rx_s p){
+void findParameterTx(struct lgw_pkt_rx_s* p, struct lgw_type_s *paramTx){
+	int end = 17;
+	
+	memcpy(p->payload+end,&(paramTx->crc),sizeof(uint16_t));
+	end += sizeof(uint16_t);
+	memcpy(p->payload+end,&(paramTx->datarate),sizeof(uint32_t));
+	end += sizeof(uint32_t);
+	memcpy(p->payload+end,&(paramTx->bandwidth),sizeof(uint8_t));
+	end += sizeof(uint8_t);
+	memcpy(p->payload+end,&(paramTx->rf_power),sizeof(uint16_t));
+	// a faire 	
+}
+
+void write_results(float snr, int counter, struct lgw_pkt_rx_s* p){
 	FILE* fichier = NULL;
-
     fichier = fopen("test.txt", "a");
-
+    float average_snr = snr/counter;
+    struct lgw_type_s *paramTx = NULL;
+	
     if (fichier != NULL)
     {
-		fputs("yoo",fichier);
+		fputs("Résultat : ",fichier);
+		fprintf(fichier," atténuation : %+5.1f,",average_snr);
+		fprintf(fichier,"nombre de paquet : %i, ",counter);
+		findParameterTx(p,paramTx);
+		fprintf(fichier," pour les paramètres : datarate :%6u,", paramTx->datarate);
+		fputs(" crc : ",fichier);
+		switch (paramTx->crc){
+			case CR_LORA_4_5:	fputs("4/5   ,", fichier); break;
+			case CR_LORA_4_6:	fputs("2/3   ,", fichier); break;
+			case CR_LORA_4_7:	fputs("4/7  ,", fichier); break;
+			case CR_LORA_4_8:	fputs("1/2 ,", fichier); break;
+			case CR_UNDEFINED:	fputs("undefined ,", fichier); break;
+			default: fputs("ERR   ,", fichier);			
+		}
+		
+		fputs(" datarate : ",fichier);
+		switch (paramTx->datarate) {
+			case DR_LORA_SF7:	fputs("SF7   ,", fichier); break;
+			case DR_LORA_SF8:	fputs("SF8   ,", fichier); break;
+			case DR_LORA_SF9:	fputs("SF9   ,", fichier); break;
+			case DR_LORA_SF10:	fputs("SF10  ,", fichier); break;
+			case DR_LORA_SF11:	fputs("SF11  ,", fichier); break;
+			case DR_LORA_SF12:	fputs("SF12  ,", fichier); break;
+			default: fputs("ERR   ,", fichier);
+		}
+		
+		fputs(" bandwith : ",fichier);
+		switch(paramTx->bandwidth) {
+			case BW_500KHZ:	fputs("500000,", fichier); break;
+			case BW_250KHZ:	fputs("250000,", fichier); break;
+			case BW_125KHZ:	fputs("125000,", fichier); break;
+			case BW_62K5HZ:	fputs("62500 ,", fichier); break;
+			case BW_31K2HZ:	fputs("31200 ,", fichier); break;
+			case BW_15K6HZ:	fputs("15600 ,", fichier); break;
+			case BW_7K8HZ:	fputs("7800  ,", fichier); break;
+			case BW_UNDEFINED: fputs("0     ,", fichier); break;
+			default: fputs("-1    ,", fichier);
+		}
+				
         fclose(fichier); // On ferme le fichier qui a été ouvert
     }
 }
@@ -440,6 +494,9 @@ int main(int argc, char **argv)
 {
 	int i, j; /* loop and temporary variables */
 	struct timespec sleep_time = {0, 3000000}; /* 3 ms */
+	
+	float average_snr=0;
+	int packet_counter=0;
 	
 	/* clock and log rotation management */
 	int log_rotate_interval = 3600; /* by default, rotation every hour */
@@ -551,20 +608,24 @@ int main(int argc, char **argv)
 		}
 		
 		/* log packets */
-		float average_snr;
-		int packet_counter==0;
 		
 		for (i=0; i < nb_pkt; ++i) {
 			p = &rxpkt[i];
 			
 			if (compare_id(p)==1) {
+				if(packet_counter!=0){
+					write_results(average_snr,packet_counter,p);
+				}
 				send_join_response(p);
-				packet_counter==0;
+				packet_counter=0;
+				average_snr=0;
 			}else if(compare_id(p)==2){
-				packets_counter++;
-				average_snr+=p->snr;
+				packet_counter++;
+				average_snr+=p->snr;				
 			}else if(compare_id(p)==3){
-				write_results(average_snr,packet_counter,&p);
+				write_results(average_snr,packet_counter,p);
+				packet_counter=0;
+				average_snr=0;
 			}
 		
 			/* writing gateway ID */

@@ -163,6 +163,20 @@ Maintainer: Sylvain Miermont
 /* -------------------------------------------------------------------------- */
 /* --- PUBLIC TYPES --------------------------------------------------------- */
 
+
+/**
+ * @struct lgw_type_s
+ * @brief Structure for log file
+ * 
+ */
+ struct lgw_type_s {
+	uint16_t	crc;		/*!> CRC that was received in the payload */
+	uint8_t		bandwidth;	/*!> modulation bandwidth (LoRa only) */
+	uint32_t	datarate;	/*!> RX datarate of the packet (SF for LoRa) */
+	int8_t		rf_power;	/*!> TX power, in dBm */
+	
+};
+
 enum lgw_radio_type_e {
 	LGW_RADIO_TYPE_NONE,
 	LGW_RADIO_TYPE_SX1255,
