@@ -2021,7 +2021,8 @@ static void engineUpdate (void) {
                     goto reset;
                 }
                                 
-                if (LMIC.message_type == 1){ //Test Message - The data to be transfered is the parameters used for the test
+                if (LMIC.message_type == 2){ //Test Message - The data to be transfered is the parameters used for the test
+                    //debug_str("xxxxxxxxxxxxxx");
                     int end = 0;
                     os_copyMem(LMIC.pendTxData+end,&LMIC.errcr, sizeof(enum _cr_t));
                     end += sizeof(u1_t);
@@ -2035,7 +2036,24 @@ static void engineUpdate (void) {
                     end += sizeof(s1_t);
                     
                     os_copyMem(LMIC.pendTxData+end,&LMIC.txpow, 1); //Power is represented by 1 byte
-                    end += sizeof(s1_t);                    
+                    end += sizeof(s1_t);
+                    debug_val("coderate = ", LMIC.errcr);
+                    
+                    debug_val("SF = ", sf);
+                    
+                    debug_val("BW = ", bw);
+                    
+                    debug_val("pow = ", LMIC.txpow);
+                    
+                    debug_val("LMIC.coderate = ", *LMIC.pendTxData);
+                    
+                    debug_val("LMIC.SF = ", *(LMIC.pendTxData+sizeof(s1_t)));
+                    
+                    debug_val("LMIC.BW = ", *(LMIC.pendTxData+2*sizeof(s1_t)));
+                    
+                    debug_val("LMIC.pow = ", *(LMIC.pendTxData+3*sizeof(s1_t)));
+                    
+                    
                 }
                 
                 buildDataFrame2();
