@@ -398,66 +398,51 @@ int compare_id(struct lgw_pkt_rx_s *p){
 	}
 }
 
-void findParameterTx(struct lgw_pkt_rx_s* p, struct lgw_type_s *paramTx){
-	int end = 17;
-	
-	memcpy(p->payload+end,&(paramTx->crc),sizeof(uint16_t));
-	end += sizeof(uint16_t);
-	memcpy(p->payload+end,&(paramTx->datarate),sizeof(uint32_t));
-	end += sizeof(uint32_t);
-	memcpy(p->payload+end,&(paramTx->bandwidth),sizeof(uint8_t));
-	end += sizeof(uint8_t);
-	memcpy(p->payload+end,&(paramTx->rf_power),sizeof(uint16_t));
-	// a faire 	
-}
-
 void write_results(float snr, int counter, struct lgw_pkt_rx_s* p){
 	FILE* fichier = NULL;
     fichier = fopen("test.txt", "a");
-    float average_snr = snr/counter;
-    struct lgw_type_s *paramTx = NULL;
+    float average_snr = snr/counter;   
 	
     if (fichier != NULL)
     {
 		fputs("Résultat : ",fichier);
 		fprintf(fichier," atténuation : %+5.1f,",average_snr);
 		fprintf(fichier,"nombre de paquet : %i, ",counter);
-		findParameterTx(p,paramTx);
-		fprintf(fichier," pour les paramètres : datarate :%6u,", paramTx->datarate);
+		
 		fputs(" crc : ",fichier);
-		switch (paramTx->crc){
-			case CR_LORA_4_5:	fputs("4/5   ,", fichier); break;
-			case CR_LORA_4_6:	fputs("2/3   ,", fichier); break;
-			case CR_LORA_4_7:	fputs("4/7  ,", fichier); break;
+		switch (p->payload[17]){
+			case CR_LORA_4_5:	fputs("4/5 ,", fichier); break;
+			case CR_LORA_4_6:	fputs("2/3 ,", fichier); break;
+			case CR_LORA_4_7:	fputs("4/7 ,", fichier); break;
 			case CR_LORA_4_8:	fputs("1/2 ,", fichier); break;
 			case CR_UNDEFINED:	fputs("undefined ,", fichier); break;
 			default: fputs("ERR   ,", fichier);			
 		}
 		
 		fputs(" datarate : ",fichier);
-		switch (paramTx->datarate) {
-			case DR_LORA_SF7:	fputs("SF7   ,", fichier); break;
-			case DR_LORA_SF8:	fputs("SF8   ,", fichier); break;
-			case DR_LORA_SF9:	fputs("SF9   ,", fichier); break;
-			case DR_LORA_SF10:	fputs("SF10  ,", fichier); break;
-			case DR_LORA_SF11:	fputs("SF11  ,", fichier); break;
-			case DR_LORA_SF12:	fputs("SF12  ,", fichier); break;
-			default: fputs("ERR   ,", fichier);
+		switch (p->payload[18]) {
+			case DR_LORA_SF7:	fputs("SF7 ,", fichier); break;
+			case DR_LORA_SF8:	fputs("SF8 ,", fichier); break;
+			case DR_LORA_SF9:	fputs("SF9 ,", fichier); break;
+			case DR_LORA_SF10:	fputs("SF10 ,", fichier); break;
+			case DR_LORA_SF11:	fputs("SF11 ,", fichier); break;
+			case DR_LORA_SF12:	fputs("SF12 ,", fichier); break;
+			default: fputs("ERR ,", fichier);
 		}
 		
 		fputs(" bandwith : ",fichier);
-		switch(paramTx->bandwidth) {
-			case BW_500KHZ:	fputs("500000,", fichier); break;
-			case BW_250KHZ:	fputs("250000,", fichier); break;
-			case BW_125KHZ:	fputs("125000,", fichier); break;
+		switch(p->payload[19]) {
+			case BW_500KHZ:	fputs("500000 ,", fichier); break;
+			case BW_250KHZ:	fputs("250000 ,", fichier); break;
+			case BW_125KHZ:	fputs("125000 ,", fichier); break;
 			case BW_62K5HZ:	fputs("62500 ,", fichier); break;
 			case BW_31K2HZ:	fputs("31200 ,", fichier); break;
 			case BW_15K6HZ:	fputs("15600 ,", fichier); break;
-			case BW_7K8HZ:	fputs("7800  ,", fichier); break;
-			case BW_UNDEFINED: fputs("0     ,", fichier); break;
+			case BW_7K8HZ:	fputs("7800 ,", fichier); break;
+			case BW_UNDEFINED: fputs("0 ,", fichier); break;
 			default: fputs("-1    ,", fichier);
 		}
-				
+		fputs("\n \n ",fichier);
         fclose(fichier); // On ferme le fichier qui a été ouvert
     }
 }
