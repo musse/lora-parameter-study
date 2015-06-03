@@ -116,11 +116,6 @@ void onEvent (ev_t ev) {
             debug_str("Joined, sending first message.\r\n");
             debug_led(1);
             os_clearCallback(&blinkjob);
-
-            // disables all channels but the tx one
-            for (u1_t i = 0; i <= 5; i++)
-                if (i != TX_CHANNEL)
-                    LMIC_disableChannel(i);
             
             sendNextMessage();
 
