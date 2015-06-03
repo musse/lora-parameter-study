@@ -79,7 +79,7 @@ int main () {
 static osjob_t blinkjob;
 static u1_t ledstate = 0;
 u1_t msgData = 1;
-static u1_t numTest = 0;
+static u1_t numTest = 3;
 
 static void blinkfunc (osjob_t* j) {
     // toggle LED
@@ -174,7 +174,7 @@ void testPower(){
 }
 
 void testSpreadingFactor(){
-    if(numberToSend <100){
+    if(numberToSend <3){
         numberToSend++;
         // ICI on fixe les paramètres et les data a envoyer selon numerTestChange
         switch(numberTestChange){
