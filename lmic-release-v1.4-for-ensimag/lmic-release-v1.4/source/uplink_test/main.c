@@ -13,6 +13,10 @@
 #include "debug.h"
 #include "id.h"
 
+// CONSTANTS
+
+ #define TEST_FUNCTION() testPacketSize()
+
 //////////////////////////////////////////////////
 // CONFIGURATION (FOR APPLICATION CALLBACKS BELOW)
 //////////////////////////////////////////////////
@@ -79,7 +83,6 @@ int main () {
 static osjob_t blinkjob;
 static u1_t ledstate = 0;
 u1_t msgData = 1;
-static u1_t numTest = 0;
 
 static void blinkfunc (osjob_t* j) {
     // toggle LED
@@ -89,7 +92,7 @@ static void blinkfunc (osjob_t* j) {
     os_setTimedCallback(j, os_getTime()+ms2osticks(100), blinkfunc);
 }
 
-void testPacketSize(){
+void testPacketSize () {
 
     static int firstCall = 1;
 
@@ -98,90 +101,90 @@ void testPacketSize(){
         setTxParameters(CR_4_5, DR_SF7, SF7, 14, BW125, EU868_F6);
     }
     
-    if(numberToSend <10){
+    if (numberToSend < 10) {
         numberToSend++;
         // ICI on fixe les paramètres et les data a envoyer selon numerTestChange
         
-        LMIC.message_type=TEST_MESSAGE;
+        LMIC.message_type = TEST_MESSAGE;
         // schedule transmission (port 1, datalen 1, no ack requested)
         LMIC_setTxData2(1, &numberToSend, numberTestChange*5+1, 0);
         // (will be sent as soon as duty cycle permits)
-    }else{
-        LMIC.message_type=END_MESSAGE;
+    } else {
+        LMIC.message_type = END_MESSAGE;
         numberTestChange++;
-        numberToSend=0;
+        numberToSend = 0;
         // envoi des paramètres du test
         LMIC_setTxData2(1, &numberToSend, 1, 0);
-        if(numberTestChange==10){
-            endTest=1;
+        if(numberTestChange == 10) {
+            endTest = 1;
         }
   }
   
 }
 
-void testBandWidth(){
-    if(numberToSend <100){
+void testBandWidth () {
+    if(numberToSend < 100) {
         numberToSend++;
         // ICI on fixe les paramètres et les data a envoyer selon numerTestChange
         switch(numberTestChange){
-            case 0 :
+            case 0:
                 setTxParameters(CR_4_5, DR_SF7, SF7, 14, BW125, EU868_F6);
                 break;
-            case 1 :
+            case 1:
                 setTxParameters(CR_4_5, DR_SF7, SF7, 14, BW250, EU868_F6);
                 break;
             case 2:
                 setTxParameters(CR_4_5, DR_SF7, SF7, 14, BW500, EU868_F6);
                 break;
-            default :
+            default:
                 break;
         }
-        LMIC.message_type=TEST_MESSAGE;
+        LMIC.message_type = TEST_MESSAGE;
         // schedule transmission (port 1, datalen 1, no ack requested)
         LMIC_setTxData2(1, &msgData, 1, 0);
         // (will be sent as soon as duty cycle permits)
-    }else{
-        LMIC.message_type=END_MESSAGE;
+    }else {
+        LMIC.message_type = END_MESSAGE;
         numberTestChange++;
-        numberToSend=0;
+        numberToSend = 0;
         // envoi des paramètres du test
         LMIC_setTxData2(1, &msgData, 1, 0);
-        if(numberTestChange==3){
-            endTest=1;
+        if (numberTestChange == 3) {
+            endTest = 1;
         }
   }
 }
 
-void testPower(){
-     if(numberToSend <100){
+void testPower () {
+     if(numberToSend < 100) {
         numberToSend++;
         // ICI on fixe les paramètres et les data a envoyer selon numerTestChange
         setTxParameters(CR_4_5, DR_SF7, SF7, numberTestChange*2+6, BW125, EU868_F6);
-        LMIC.message_type=TEST_MESSAGE;
+        LMIC.message_type = TEST_MESSAGE;
         // schedule transmission (port 1, datalen 1, no ack requested)
         LMIC_setTxData2(1, &msgData, 1, 0);
         // (will be sent as soon as duty cycle permits)
     }else{
-        LMIC.message_type=END_MESSAGE;
+        LMIC.message_type = END_MESSAGE;
         numberTestChange++;
-        numberToSend=0;
+        numberToSend = 0;
         // envoi des paramètres du test
         LMIC_setTxData2(1, &msgData, 1, 0);
-        if(numberTestChange==8){
-            endTest=1;
+        if (numberTestChange == 8) {
+            endTest = 1;
         }
   }
 }
 
-void testSpreadingFactor(){
-    if(numberToSend <100){
+void testSpreadingFactor () {
+    if (numberToSend < 100) {
         numberToSend++;
         // ICI on fixe les paramètres et les data a envoyer selon numerTestChange
-        switch(numberTestChange){
-            case 0 :
+        switch (numberTestChange) {
+            case 0:
                 setTxParameters(CR_4_5, DR_SF7, SF7, 14, BW125, EU868_F6);
                 break;
-            case 1 :
+            case 1:
                 setTxParameters(CR_4_5, DR_SF8, SF8, 14, BW125, EU868_F6);
                 break;
             case 2:
@@ -196,34 +199,34 @@ void testSpreadingFactor(){
             case 5:
                 setTxParameters(CR_4_5, DR_SF12, SF12, 14, BW125, EU868_F6);
                 break;
-            default :
+            default:
                 break;
         }
-        LMIC.message_type=TEST_MESSAGE;
+        LMIC.message_type = TEST_MESSAGE;
         // schedule transmission (port 1, datalen 1, no ack requested)
         LMIC_setTxData2(1, &msgData, 1, 0);
         // (will be sent as soon as duty cycle permits)
-    }else{
-        LMIC.message_type=END_MESSAGE;
+    } else {
+        LMIC.message_type = END_MESSAGE;
         numberTestChange++;
-        numberToSend=0;
+        numberToSend = 0;
         // envoi des paramètres du test
         LMIC_setTxData2(1, &msgData, 1, 0);
-        if(numberTestChange==6){
-            endTest=1;
+        if (numberTestChange == 6) {
+            endTest = 1;
         }
   }
 }
 
-void testCodingRate(){
-    if(numberToSend <100){
+void testCodingRate () {
+    if (numberToSend < 100) {
         numberToSend++;
         // ICI on fixe les paramètres et les data a envoyer selon numerTestChange
          switch(numberTestChange){
-            case 0 :
+            case 0:
                 setTxParameters(CR_4_5, DR_SF7, SF7, 14, BW125, EU868_F6);
                 break;
-            case 1 :
+            case 1:
                 setTxParameters(CR_4_6, DR_SF7, SF7, 14, BW125, EU868_F6);
                 break;
             case 2:
@@ -232,45 +235,24 @@ void testCodingRate(){
             case 3:
                 setTxParameters(CR_4_8, DR_SF7, SF7, 14, BW125, EU868_F6);
                 break;
-            default :
+            default:
                 break;
         }
-        LMIC.message_type=TEST_MESSAGE;
+        LMIC.message_type = TEST_MESSAGE;
         // schedule transmission (port 1, datalen 1, no ack requested)
         LMIC_setTxData2(1, &msgData, 1, 0);
         // (will be sent as soon as duty cycle permits)
     }else{
-        LMIC.message_type=END_MESSAGE;
+        LMIC.message_type = END_MESSAGE;
         numberTestChange++;
-        numberToSend=0;
+        numberToSend = 0;
         // envoi des paramètres du test
         LMIC_setTxData2(1, &msgData, 1, 0);
-        if(numberTestChange==4){
+        if (numberTestChange == 4) {
             endTest=1;
         }
   }  
   
-}
-
-void sendNextMessage() {
-   // test choice
-    switch(numTest){
-        case 0 :
-            testPacketSize();
-            break;
-        case 1 :
-            testBandWidth();
-            break;
-        case 2 :
-            testPower();
-            break;
-        case 3 :
-            testSpreadingFactor();
-            break;
-        case 4 :
-            testCodingRate();
-            break;  
-  }
 }
 
 //////////////////////////////////////////////////
@@ -286,7 +268,6 @@ void onEvent (ev_t ev) {
             debug_str("Started joining.\r\n");
             // start blinking
             blinkfunc(&blinkjob);
-
             break;
 
         case EV_JOINED:
@@ -294,13 +275,12 @@ void onEvent (ev_t ev) {
             debug_str("Joined, sending first message.\r\n");
             debug_led(1);
             os_clearCallback(&blinkjob);
-            sendNextMessage();
-
+            TEST_FUNCTION();
             break;
 
         // network joined, session established
         case EV_TXCOMPLETE:
-            if (endTest==1){
+            if (endTest == 1) {
                 break;
             }
             if (LMIC.dataLen) { // data received in rx slot after tx
@@ -312,7 +292,7 @@ void onEvent (ev_t ev) {
                 // nothing received after sending something
                 debug_str("No message received after sending data.\r\n");
             }
-            sendNextMessage();            
+            TEST_FUNCTION();          
             break;
     }
 }
