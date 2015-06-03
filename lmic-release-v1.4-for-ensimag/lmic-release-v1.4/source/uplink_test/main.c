@@ -15,7 +15,7 @@
 
 // CONSTANTS
 
- #define TEST_FUNCTION() testPacketSize()
+ #define TEST_FUNCTION() testSpreadingFactor()
 
 //////////////////////////////////////////////////
 // CONFIGURATION (FOR APPLICATION CALLBACKS BELOW)
@@ -211,7 +211,7 @@ void testSpreadingFactor(){
         LMIC.message_type = END_MESSAGE;
         numberTestChange++;
         numberToSend = 0;
-        // envoi des paramètres du test
+        //debug_str("-------envoi des paramètres du test--------");
         LMIC_setTxData2(1, &msgData, 1, 0);
         if (numberTestChange == 6) {
             endTest = 1;

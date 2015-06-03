@@ -1844,19 +1844,20 @@ static void engineUpdate (void) {
                     os_copyMem(LMIC.pendTxData+end,&LMIC.errcr, sizeof(enum _cr_t));
                     end += sizeof(u1_t);
                     
-                    u1_t sf = getSf(LMIC.rps);
-                    os_copyMem(LMIC.pendTxData+end, &sf, sizeof(enum _sf_t));
-                    end += sizeof(u1_t);
+                    //enum _sf_t sf = getSf(LMIC.rps);
+                    
+                    os_copyMem(LMIC.pendTxData+end, &LMIC.datarate, sizeof(LMIC.datarate));
+                    end += sizeof(LMIC.datarate);
                     
                     u1_t bw = getBw(LMIC.rps);
-                    os_copyMem(LMIC.pendTxData+end, &bw, sizeof(enum _bw_t));
-                    end += sizeof(s1_t);
+                    os_copyMem(LMIC.pendTxData+end, &bw, sizeof(bw));
+                    end += sizeof(bw);
                     
                     os_copyMem(LMIC.pendTxData+end,&LMIC.txpow, 1); //Power is represented by 1 byte
                     end += sizeof(s1_t);
-                    debug_val("coderate = ", LMIC.errcr);
+                   /* debug_val("coderate = ", LMIC.errcr);
                     
-                    debug_val("SF = ", sf);
+                    debug_val("SF = ", LMIC.datarate);
                     
                     debug_val("BW = ", bw);
                     
@@ -1869,7 +1870,7 @@ static void engineUpdate (void) {
                     debug_val("LMIC.BW = ", *(LMIC.pendTxData+2*sizeof(s1_t)));
                     
                     debug_val("LMIC.pow = ", *(LMIC.pendTxData+3*sizeof(s1_t)));
-                    LMIC.pendTxLen = end; 
+                    */LMIC.pendTxLen = end; 
                     
                 }
                 
@@ -1881,15 +1882,15 @@ static void engineUpdate (void) {
             pre-defined options of the array _DR2RPS_CRC[]. Our TX RPS is defined in LMIC.tx_rps, and was set by
             setTxParameters() */
             
-            debug_str("Changing LMIC.rps");
+            //debug_str("Changing LMIC.rps");
 
             if ((LMIC.opmode & OP_JOINING) != 0) { // if joining
-                debug_str(" (joining).\r\n");
+                //debug_str(" (joining).\r\n");
                 LMIC.rps = setCr(updr2rps(txdr), (cr_t)LMIC.errcr);
 
             }
             else {
-                debug_str(" (not joining).\r\n");
+                //debug_str(" (not joining).\r\n");
                 LMIC.rps = LMIC.tx_rps;
             }
             
