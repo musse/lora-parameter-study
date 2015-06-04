@@ -15,7 +15,7 @@
 
 // CONSTANTS
 
- #define TEST_FUNCTION() testSpreadingFactor()
+#define TEST_FUNCTION() testCodingRate()
 
 //////////////////////////////////////////////////
 // CONFIGURATION (FOR APPLICATION CALLBACKS BELOW)
@@ -123,18 +123,18 @@ void testPacketSize () {
 }
 
 void testBandWidth () {
-    if(numberToSend < 100) {
+    if(numberToSend < 3) {
         numberToSend++;
         // ICI on fixe les paramètres et les data a envoyer selon numerTestChange
         switch(numberTestChange){
             case 0:
-                setTxParameters(CR_4_5, DR_SF7, SF7, 14, BW125, EU868_F6);
+                setTxParameters(CR_4_5, DR_SF7, SF7, 14, BW125, EU868_F2);
                 break;
             case 1:
-                setTxParameters(CR_4_5, DR_SF7, SF7, 14, BW250, EU868_F6);
+                setTxParameters(CR_4_5, DR_SF7, SF7, 14, BW250, EU868_F2);
                 break;
             case 2:
-                setTxParameters(CR_4_5, DR_SF7, SF7, 14, BW500, EU868_F6);
+                setTxParameters(CR_4_5, DR_SF7, SF7, 14, BW500, EU868_F2);
                 break;
             default:
                 break;
@@ -156,7 +156,7 @@ void testBandWidth () {
 }
 
 void testPower () {
-     if(numberToSend < 100) {
+     if(numberToSend < 10) {
         numberToSend++;
         // ICI on fixe les paramètres et les data a envoyer selon numerTestChange
         setTxParameters(CR_4_5, DR_SF7, SF7, numberTestChange*2+6, BW125, EU868_F6);
@@ -178,7 +178,7 @@ void testPower () {
 
 
 void testSpreadingFactor(){
-    if(numberToSend < 3){
+    if(numberToSend < 10){
         numberToSend++;
         // ICI on fixe les paramètres et les data a envoyer selon numerTestChange
         switch (numberTestChange) {
@@ -220,7 +220,7 @@ void testSpreadingFactor(){
 }
 
 void testCodingRate () {
-    if (numberToSend < 100) {
+    if (numberToSend < 10) {
         numberToSend++;
         // ICI on fixe les paramètres et les data a envoyer selon numerTestChange
          switch(numberTestChange){
