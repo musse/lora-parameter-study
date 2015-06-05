@@ -1849,7 +1849,7 @@ static void engineUpdate (void) {
                     os_copyMem(LMIC.pendTxData+end, &LMIC.datarate, sizeof(LMIC.datarate));
                     end += sizeof(LMIC.datarate);
                     
-                    u1_t bw = getBw(LMIC.rps);
+                    u1_t bw = getBw(LMIC.tx_rps);
                     os_copyMem(LMIC.pendTxData+end, &bw, sizeof(bw));
                     end += sizeof(bw);
                     
@@ -1870,7 +1870,8 @@ static void engineUpdate (void) {
                     debug_val("LMIC.BW = ", *(LMIC.pendTxData+2*sizeof(s1_t)));
                     
                     debug_val("LMIC.pow = ", *(LMIC.pendTxData+3*sizeof(s1_t)));
-                    */LMIC.pendTxLen = end; 
+                    */
+                    LMIC.pendTxLen = end; 
                     
                 }
                 
@@ -1892,6 +1893,10 @@ static void engineUpdate (void) {
             else {
                 //debug_str(" (not joining).\r\n");
                 LMIC.rps = LMIC.tx_rps;
+                /*debug_val("LMIC.RPS = ", LMIC.rps);
+                debug_val("LMIC.tx_rps =", LMIC.tx_rps);
+                debug_val("BW(tx) = ", getBw(LMIC.tx_rps));
+                debug_val("BW(rps) =", getBw(LMIC.rps));*/
             }
             
             //LMIC.rps = setCr(updr2rps(txdr), (cr_t)LMIC.errcr);
