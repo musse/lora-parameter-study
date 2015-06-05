@@ -263,6 +263,7 @@ void  LMIC_disableTracking (void);
 void  LMIC_stopPingable  (void);
 void  LMIC_setPingable   (u1_t intvExp);
 void  LMIC_tryRejoin     (void);
+void  LMIC_setRxData     (void);
 
 void LMIC_setSession (u4_t netid, devaddr_t devaddr, xref2u1_t nwkKey, xref2u1_t artKey);
 void LMIC_setLinkCheckMode (bit_t enabled);

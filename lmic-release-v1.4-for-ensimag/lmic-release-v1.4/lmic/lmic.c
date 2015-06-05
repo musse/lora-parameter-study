@@ -613,9 +613,9 @@ static void updateTx (ostime_t txbeg) {
     xref2band_t band = &LMIC.bands[freq & 0x3];
     LMIC.freq  = freq & ~(u4_t)3;
     LMIC.txpow = band->txpow;
-    band->avail = txbeg + airtime * band->txcap;
+    band->avail = txbeg; // + airtime * band->txcap;
     if( LMIC.globalDutyRate != 0 )
-        LMIC.globalDutyAvail = txbeg; // + (airtime<<LMIC.globalDutyRate);
+        LMIC.globalDutyAvail = txbeg + (airtime<<LMIC.globalDutyRate);
 }
 
 static ostime_t nextTx (ostime_t now) {
@@ -1225,14 +1225,15 @@ static bit_t processJoinAccept (void) {
 
 static void processRx2Jacc (xref2osjob_t osjob) {
     
-    debug_str("Entered processRx2Jacc()\r\n");  
-    debug_val("LMIC.datalen = ", LMIC.dataLen);
+    
+
         
     if (LMIC.dataLen == 0) {
-        debug_str("Did not receive the join response."); 
+        debug_str("-");
         LMIC.txrxFlags = 0;  // nothing in 1st/2nd DN slot
+        reportEvent(EV_RXCOMPLETE);
     } else {
-        debug_str("Received join response:");
+        debug_str("\r\n Received join response:");
         debug_buf(LMIC.frame + LMIC.dataBeg, LMIC.dataLen);
         //processJoinAccept();
         LMIC.devaddr = 1;
@@ -1647,7 +1648,7 @@ static bit_t processDnData (void) {
             LMIC.opmode &= ~OP_LINKDEAD;
             reportEvent(EV_LINK_ALIVE);
         }
-        reportEvent(EV_TXCOMPLETE);
+        reportEvent(EV_RXCOMPLETE);
         // If we haven't heard from NWK in a while although we asked for a sign
         // assume link is dead - notify application and keep going
        /* if( LMIC.adrAckReq > LINK_CHECK_DEAD ) {
@@ -2048,6 +2049,9 @@ int LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) {
     return 0;
 }
 
+void  LMIC_setRxData(void){
+  txDone(0,setupRx2Jacc);
+}
 
 // Send a payload-less message to signal device is alive
 void LMIC_sendAlive (void) {
