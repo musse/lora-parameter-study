@@ -615,7 +615,7 @@ static void updateTx (ostime_t txbeg) {
     LMIC.txpow = band->txpow;
     band->avail = txbeg + airtime * band->txcap;
     if( LMIC.globalDutyRate != 0 )
-        LMIC.globalDutyAvail = txbeg + (airtime<<LMIC.globalDutyRate);
+        LMIC.globalDutyAvail = txbeg; // + (airtime<<LMIC.globalDutyRate);
 }
 
 static ostime_t nextTx (ostime_t now) {

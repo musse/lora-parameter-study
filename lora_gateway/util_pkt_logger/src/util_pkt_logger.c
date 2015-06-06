@@ -53,7 +53,8 @@ Maintainer: Sylvain Miermont
 #define ARRAY_SIZE(a)	(sizeof(a) / sizeof((a)[0]))
 #define MSG(args...)	fprintf(stderr,"loragw_pkt_logger: " args) /* message that is destined to the user */
 
-/* -------------------------------------------------------------------------- */
+/* --------------------------------------------------------
+------------------ */
 /* --- PRIVATE VARIABLES (GLOBAL) ------------------------------------------- */
 
 /* signal handling variables */
@@ -70,7 +71,7 @@ time_t now_time;
 time_t log_start_time;
 FILE * log_file = NULL;
 char log_file_name[64];
-
+static int size=0;
 /* -------------------------------------------------------------------------- */
 /* --- PRIVATE FUNCTIONS DECLARATION ---------------------------------------- */
 
@@ -409,39 +410,38 @@ void write_results(float snr, int counter, struct lgw_pkt_rx_s* p){
 		fprintf(fichier," atténuation : %+5.1f,",average_snr);
 		fprintf(fichier,"nombre de paquet : %i, ",counter);
 		
-		fputs(" crc : ",fichier);
+		fputs(" cr : ",fichier);
 		switch (p->payload[17]){
-			case CR_LORA_4_5:	fputs("4/5 ,", fichier); break;
-			case CR_LORA_4_6:	fputs("2/3 ,", fichier); break;
-			case CR_LORA_4_7:	fputs("4/7 ,", fichier); break;
-			case CR_LORA_4_8:	fputs("1/2 ,", fichier); break;
-			case CR_UNDEFINED:	fputs("undefined ,", fichier); break;
+			case 0:	fputs("4/5 ,", fichier); break;
+			case 1:	fputs("2/3 ,", fichier); break;
+			case 2:	fputs("4/7 ,", fichier); break;
+			case 3:	fputs("1/2 ,", fichier); break;
 			default: fputs("ERR   ,", fichier);			
 		}
 		
 		fputs(" datarate : ",fichier);
 		switch (p->payload[18]) {
-			case DR_LORA_SF7:	fputs("SF7 ,", fichier); break;
-			case DR_LORA_SF8:	fputs("SF8 ,", fichier); break;
-			case DR_LORA_SF9:	fputs("SF9 ,", fichier); break;
-			case DR_LORA_SF10:	fputs("SF10 ,", fichier); break;
-			case DR_LORA_SF11:	fputs("SF11 ,", fichier); break;
-			case DR_LORA_SF12:	fputs("SF12 ,", fichier); break;
+			case 5 :	fputs("SF7 ,", fichier); break;
+			case 4 :	fputs("SF8 ,", fichier); break;
+			case 3 :	fputs("SF9 ,", fichier); break;
+			case 2 :	fputs("SF10 ,", fichier); break;
+			case 1 :	fputs("SF11 ,", fichier); break;
+			case 0 :	fputs("SF12 ,", fichier); break;
+			case 6 :	fputs("undefined ,", fichier); break;
 			default: fputs("ERR ,", fichier);
 		}
 		
 		fputs(" bandwith : ",fichier);
 		switch(p->payload[19]) {
-			case BW_500KHZ:	fputs("500000 ,", fichier); break;
-			case BW_250KHZ:	fputs("250000 ,", fichier); break;
-			case BW_125KHZ:	fputs("125000 ,", fichier); break;
-			case BW_62K5HZ:	fputs("62500 ,", fichier); break;
-			case BW_31K2HZ:	fputs("31200 ,", fichier); break;
-			case BW_15K6HZ:	fputs("15600 ,", fichier); break;
-			case BW_7K8HZ:	fputs("7800 ,", fichier); break;
-			case BW_UNDEFINED: fputs("0 ,", fichier); break;
+			case 0 :	fputs("125000 ,", fichier); break;
+			case 1 :	fputs("250000 ,", fichier); break;
+			case 2:	    fputs("500000 ,", fichier); break;
+			case 3:     fputs("0 ,", fichier); break;
 			default: fputs("-1    ,", fichier);
 		}
+		fprintf(fichier," power : %i,", p->payload[20]);
+		
+		fprintf(fichier, " longueur des paquets : %i .",size);
 		fputs("\n \n ",fichier);
         fclose(fichier); // On ferme le fichier qui a été ouvert
     }
@@ -598,18 +598,21 @@ int main(int argc, char **argv)
 			p = &rxpkt[i];
 			
 			if (compare_id(p)==1) {
-				if(packet_counter!=0){
-					write_results(average_snr,packet_counter,p);
-				}
 				send_join_response(p);
 				packet_counter=0;
 				average_snr=0;
+				size =0;
 			}else if(compare_id(p)==2){
 				packet_counter++;
+				size=p->size;
 				average_snr+=p->snr;				
 			}else if(compare_id(p)==3){
-				write_results(average_snr,packet_counter,p);
+				if(packet_counter!= 0){					
+					write_results(average_snr,packet_counter,p);
+					MSG(" \n Série terminée  % i \n ", packet_counter);
+				}
 				packet_counter=0;
+				size=0;
 				average_snr=0;
 			}
 		
