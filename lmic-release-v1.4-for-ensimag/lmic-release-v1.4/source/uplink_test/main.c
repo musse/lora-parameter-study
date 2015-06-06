@@ -27,10 +27,8 @@
 #define TEST_STRING "BW"
 */
 
-/*
 #define UPDATE_TEST() testSF()
 #define TEST_STRING "SF"
-*/
 
 /*
 #define UPDATE_TEST() testCRC()
@@ -142,7 +140,7 @@ static void blinkfunc (osjob_t* j) {
 }
 
 
-void currentTestEnd () {
+void currentTestEnd (s4_t averageTime) {
     LMIC.message_type = END_MESSAGE;
 
     u1_t sizeToSend = 0;
@@ -160,6 +158,9 @@ void currentTestEnd () {
 
     os_copyMem(LMIC.pendTxData + sizeToSend, &LMIC.txpow, 1); // power is represented by 1 byte
     sizeToSend += sizeof(s1_t);
+
+    os_copyMem(LMIC.pendTxData + sizeToSend, &averageTime, sizeof(s4_t));
+    sizeToSend += sizeof(s4_t);
 
     /*
     debug_val("coderate = ", LMIC.errcr);
@@ -303,6 +304,7 @@ void sendTestMessage (void) {
     
     static bool firstCall = true;
     static u1_t currentSettingsCount = 0;
+    static s4_t timeStart;
 
     // if first call of the function, set tx fixed parameters
     if (firstCall) {
@@ -318,11 +320,14 @@ void sendTestMessage (void) {
     static u1_t sizeToSend;
 
     if (currentSettingsCount == MSGS_PER_SETTING) {
+        s4_t averageTime = (osticks2ms(os_getTime()) - timeStart) / MSGS_PER_SETTING;
         currentSettingsCount = 0;
-        currentTestEnd();
+        currentTestEnd(averageTime);
     } else {
         if (currentSettingsCount == 0) {
             
+            timeStart = osticks2ms(os_getTime());
+
             debug_str("\r\n");
             sizeToSend = UPDATE_TEST();
                         
