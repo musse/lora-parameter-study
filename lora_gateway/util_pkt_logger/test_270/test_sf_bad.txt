@@ -1,0 +1,7 @@
+Résultat :  atténuation :  +7.1,nombre de paquet : 29,  cr : 4/5 , datarate : SF7 , bandwith : 125000 , power : 14, temps : 1340, longueur des paquets : 25 .
+ 
+ Résultat :  atténuation :  +7.0,nombre de paquet : 29,  cr : 4/5 , datarate : SF8 , bandwith : 125000 , power : 14, temps : 1460, longueur des paquets : 25 .
+ 
+ Résultat :  atténuation :  +9.6,nombre de paquet : 30,  cr : 4/5 , datarate : SF9 , bandwith : 125000 , power : 14, temps : 2035, longueur des paquets : 25 .
+ 
+ 
