@@ -22,6 +22,7 @@
 // Constants defined by us
 
 #define TX_CHANNEL 5
+#define RX_CHANNEL 5
 
 // LMIC version
 #define LMIC_VERSION_MAJOR 1

@@ -1083,7 +1083,9 @@ static bit_t decodeFrame (void) {
 
 static void setupRx2 (void) {
     LMIC.txrxFlags = TXRX_DNW2;
-    LMIC.rps = dndr2rps(LMIC.dn2Dr);
+    if ((LMIC.opmode & OP_JOINING) != 0) { // if joining                
+        LMIC.rps = dndr2rps(LMIC.dn2Dr);
+    }   
     LMIC.freq = LMIC.dn2Freq;
     LMIC.dataLen = 0;
     os_radio(RADIO_RX);
@@ -1224,12 +1226,8 @@ static bit_t processJoinAccept (void) {
 }
 
 static void processRx2Jacc (xref2osjob_t osjob) {
-    
-    
 
-        
     if (LMIC.dataLen == 0) {
-        debug_str("-");
         LMIC.txrxFlags = 0;  // nothing in 1st/2nd DN slot
         reportEvent(EV_RXCOMPLETE);
     } else {
