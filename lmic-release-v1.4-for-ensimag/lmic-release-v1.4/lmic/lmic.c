@@ -662,7 +662,7 @@ static void setBcnRxParams (void) {
 //#define setRx1Params() /*LMIC.freq/rps remain unchanged*/
 
 static void initJoinLoop (void) {
-    debug_str("initJoinLoop() from line 687 is called.\r\n");
+    //debug_str("initJoinLoop() from line 687 is called.\r\n");
     LMIC.txChnl = /*TX_CHANNEL;*/ os_getRndU1() % 6;
     LMIC.adrTxPow = 14;
     setDrJoin(DRCHG_SET, DR_SF7);
@@ -1225,15 +1225,15 @@ static bit_t processJoinAccept (void) {
 
 static void processRx2Jacc (xref2osjob_t osjob) {
     
-    debug_str("Entered processRx2Jacc()\r\n");  
-    debug_val("LMIC.datalen = ", LMIC.dataLen);
+    //debug_str("Entered processRx2Jacc()\r\n");  
+    //debug_val("LMIC.datalen = ", LMIC.dataLen);
         
     if (LMIC.dataLen == 0) {
-        debug_str("Did not receive the join response."); 
+        debug_str("Did not receive the join response.\r\n"); 
         LMIC.txrxFlags = 0;  // nothing in 1st/2nd DN slot
     } else {
-        debug_str("Received join response:");
-        debug_buf(LMIC.frame + LMIC.dataBeg, LMIC.dataLen);
+        debug_str("Received join response.\r\n");
+        //debug_buf(LMIC.frame + LMIC.dataBeg, LMIC.dataLen);
         //processJoinAccept();
         LMIC.devaddr = 1;
         initDefaultChannels(0);
@@ -1836,43 +1836,6 @@ static void engineUpdate (void) {
                     // Do not run RESET event callback from here!
                     // App code might do some stuff after send unaware of RESET.
                     goto reset;
-                }
-                                
-                if (LMIC.message_type == 2){ //End Message - The data to be transfered is the parameters used for the test
-                    
-                    int end = 0;
-                    os_copyMem(LMIC.pendTxData+end,&LMIC.errcr, sizeof(enum _cr_t));
-                    end += sizeof(u1_t);
-                    
-                    //enum _sf_t sf = getSf(LMIC.rps);
-                    
-                    os_copyMem(LMIC.pendTxData+end, &LMIC.datarate, sizeof(LMIC.datarate));
-                    end += sizeof(LMIC.datarate);
-                    
-                    u1_t bw = getBw(LMIC.tx_rps);
-                    os_copyMem(LMIC.pendTxData+end, &bw, sizeof(bw));
-                    end += sizeof(bw);
-                    
-                    os_copyMem(LMIC.pendTxData+end,&LMIC.txpow, 1); //Power is represented by 1 byte
-                    end += sizeof(s1_t);
-                   /* debug_val("coderate = ", LMIC.errcr);
-                    
-                    debug_val("SF = ", LMIC.datarate);
-                    
-                    debug_val("BW = ", bw);
-                    
-                    debug_val("pow = ", LMIC.txpow);
-                    
-                    debug_val("LMIC.coderate = ", *LMIC.pendTxData);
-                    
-                    debug_val("LMIC.SF = ", *(LMIC.pendTxData+sizeof(s1_t)));
-                    
-                    debug_val("LMIC.BW = ", *(LMIC.pendTxData+2*sizeof(s1_t)));
-                    
-                    debug_val("LMIC.pow = ", *(LMIC.pendTxData+3*sizeof(s1_t)));
-                    */
-                    LMIC.pendTxLen = end; 
-                    
                 }
                 
                 buildDataFrame2();
