@@ -440,11 +440,39 @@ void write_results(float snr, int counter, struct lgw_pkt_rx_s* p){
 			default: fputs("-1    ,", fichier);
 		}
 		fprintf(fichier," power : %i,", p->payload[20]);
-		
+		int temps = p->payload[21] + (p->payload[22] <<8) + (p->payload[23] <<16) + (p->payload[24] <<24);
+		fprintf(fichier," temps : %i,", temps);
 		fprintf(fichier, " longueur des paquets : %i .",size);
 		fputs("\n \n ",fichier);
         fclose(fichier); // On ferme le fichier qui a été ouvert
     }
+}
+
+void send_message(uint32_t freq, uint8_t bw, uint32_t sf, uint8_t cr, uint8_t *message, uint16_t messageSize) {
+ 
+	struct lgw_pkt_tx_s join_response;
+	if (freq == 0)
+		join_response.freq_hz = JOIN_RESPONSE_FREQ;
+	else
+		join_response.freq_hz = freq;
+
+	join_response.tx_mode = IMMEDIATE;
+	//join_response.count_us = received->count_us + JOIN_RESPONSE_DELAY;
+	join_response.rf_chain = JOIN_RF_CHAIN;
+	join_response.rf_power = JOIN_RESPONSE_POWER;
+	join_response.modulation = MOD_LORA;
+	join_response.bandwidth = bw;
+	join_response.datarate = sf;
+	join_response.coderate = cr;
+	join_response.invert_pol = true;
+	// join_response.f_dev: only for FSK 
+	join_response.preamble = 8; 
+	join_response.no_crc = false;
+	join_response.no_header = false;
+	join_response.size = messageSize;
+	memcpy(join_response.payload, message, messageSize);
+	lgw_send(join_response);
+	printf("----------------MESSAGE SENT--------------\n"); 
 }
 
 void send_join_response(struct lgw_pkt_rx_s* received) {
@@ -470,8 +498,14 @@ void send_join_response(struct lgw_pkt_rx_s* received) {
 	join_response.payload[1]= 1; 
 	join_response.payload[2]= 2;
 	lgw_send(join_response);
+	/*sleep(6);
+	int i;
+	uint8_t message = 42;
+	for(i=0;i<10;i++){
+		send_message(868300000, BW_125KHZ, DR_LORA_SF7, CR_LORA_4_7, &message, sizeof(message)); 
+		sleep(1);
+	}*/
 }
-
 /* -------------------------------------------------------------------------- */
 /* --- MAIN FUNCTION -------------------------------------------------------- */
 
@@ -593,6 +627,7 @@ int main(int argc, char **argv)
 		}
 		
 		/* log packets */
+		
 		
 		for (i=0; i < nb_pkt; ++i) {
 			p = &rxpkt[i];
