@@ -52,6 +52,8 @@ Maintainer: Sylvain Miermont
 
 #define ARRAY_SIZE(a)	(sizeof(a) / sizeof((a)[0]))
 #define MSG(args...)	fprintf(stderr,"loragw_pkt_logger: " args) /* message that is destined to the user */
+#define TEST_FUNCTION() test_power();
+
 
 /* -------------------------------------------------------------------------- */
 /* --- PRIVATE VARIABLES (GLOBAL) ------------------------------------------- */
@@ -70,6 +72,7 @@ time_t now_time;
 time_t log_start_time;
 FILE * log_file = NULL;
 char log_file_name[64];
+static struct lgw_pkt_tx_s join_response;
 
 /* -------------------------------------------------------------------------- */
 /* --- PRIVATE FUNCTIONS DECLARATION ---------------------------------------- */
@@ -447,9 +450,8 @@ void write_results(float snr, int counter, struct lgw_pkt_rx_s* p){
     }
 }
 
-void send_join_response(struct lgw_pkt_rx_s* received) {
- 
-	struct lgw_pkt_tx_s join_response;
+void setParamTx(struct lgw_pkt_rx_s* received) {
+	
 	
 	join_response.freq_hz = JOIN_RESPONSE_FREQ;
 	join_response.tx_mode = TIMESTAMPED;
@@ -460,16 +462,128 @@ void send_join_response(struct lgw_pkt_rx_s* received) {
 	join_response.bandwidth = BW_125KHZ;
 	join_response.datarate = DR_LORA_SF12;
 	join_response.coderate = CR_LORA_4_5;
-	join_response.invert_pol = true;
-	// join_response.f_dev: only for FSK 
+	join_response.invert_pol = true;	
 	join_response.preamble = 8; 
 	join_response.no_crc = false;
 	join_response.no_header = false;
 	join_response.size = 3;
 	join_response.payload[0]= 0;
 	join_response.payload[1]= 1; 
-	join_response.payload[2]= 2;
+	join_response.payload[2]= 2;	
+}
+
+
+void function_test(struct lgw_pkt_rx_s* received) {
+	setParamTx(received);
+	TEST_FUNCTION();	
+}
+
+
+void send_join_response(struct lgw_pkt_rx_s* received) {
+ 
+	setParamTx(received);
 	lgw_send(join_response);
+}
+
+void test_packet(){
+	int i,j;
+	for(i=0 ; i < 10 ; i ++){
+		join_response.size = i*5;
+		for(j=0 ; j < 30 ; j++){
+			lgw_send(join_response);
+		}	
+	}
+}
+
+
+void test_power(){
+	int i,j;
+	for(i=0 ; i < 8 ; i ++){
+		join_response.rf_power = 2 + i*2;
+		for(j=0 ; j < 30 ; j++){
+			lgw_send(join_response);
+		}	
+	}
+}
+
+
+void test_coderate(){
+	int i,j;
+	for(i=0 ; i < 4 ; i ++){
+		switch(i){
+			case 0 : 
+				join_response.bandwidth=CR_LORA_4_5;
+				break;
+			case 1 : 
+				join_response.bandwidth=CR_LORA_4_6;
+				break;
+			case 2 : 
+				join_response.bandwidth=CR_LORA_4_7;
+				break;
+			case 3 : 
+				join_response.bandwidth=CR_LORA_4_8;
+				break;
+			default : 
+				break;
+		}
+		for(j=0 ; j < 30 ; j++){
+			lgw_send(join_response);
+		}	
+	}
+}
+
+
+void test_sf(){
+	int i,j;
+	for(i=0 ; i < 6 ; i ++){
+		switch(i){
+			case 0 : 
+				join_response.bandwidth=DR_LORA_SF7;
+				break;
+			case 1 : 
+				join_response.bandwidth=DR_LORA_SF8;
+				break;
+			case 2 : 
+				join_response.bandwidth=DR_LORA_SF9;
+				break;
+			case 3 : 
+				join_response.bandwidth=DR_LORA_SF10;
+				break;
+			case 4 : 
+				join_response.bandwidth=DR_LORA_SF11;
+				break;
+			case 5 : 
+				join_response.bandwidth=DR_LORA_SF12;
+				break;
+			default : 
+				break;
+		}
+		for(j=0 ; j < 30 ; j++){
+			lgw_send(join_response);
+		}	
+	}
+}
+
+void test_bandwidth(){
+	int i,j;
+	for(i=0 ; i < 3 ; i ++){
+		switch(i){
+			case 0 : 
+				join_response.bandwidth=BW_125KHZ;
+				break;
+			case 1 : 
+				join_response.bandwidth=BW_250KHZ;
+				break;
+			case 2 : 
+				join_response.bandwidth=BW_500KHZ;
+				break;
+			default : 
+				break;
+		}
+		for(j=0 ; j < 30 ; j++){
+			lgw_send(join_response);
+		}	
+	}
 }
 
 /* -------------------------------------------------------------------------- */
