@@ -1088,7 +1088,7 @@ static void setupRx2 (void) {
     }   
     LMIC.freq = LMIC.dn2Freq;
     LMIC.dataLen = 0;
-    os_radio(RADIO_RX);
+    os_radio(RADIO_RXON);
 }
 
 
@@ -1945,7 +1945,7 @@ static void engineUpdate (void) {
     LMIC.rxtime = LMIC.bcnRxtime;
     if( now - rxtime >= 0 ) {
         LMIC.osjob.func = FUNC_ADDR(processBeacon);
-        os_radio(RADIO_RX);
+        os_radio(RADIO_RXON);
         return;
     }
     os_setTimedCallback(&LMIC.osjob, rxtime, FUNC_ADDR(startRxBcn));
