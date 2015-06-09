@@ -42,6 +42,7 @@ Maintainer: Sylvain Miermont
 #define ROUTER_ID "0200000000EEFFC0"
 #define DEVICE_ID "0123456789ABCDEF"
 
+
 #define JOIN_RESPONSE_FREQ 869525000 // 869.525 MHz 
 #define JOIN_RESPONSE_DELAY 2000000 // 6 seconds in us
 #define JOIN_RF_CHAIN 0
@@ -52,7 +53,7 @@ Maintainer: Sylvain Miermont
 
 #define ARRAY_SIZE(a)	(sizeof(a) / sizeof((a)[0]))
 #define MSG(args...)	fprintf(stderr,"loragw_pkt_logger: " args) /* message that is destined to the user */
-#define TEST_FUNCTION() test_power();
+#define TEST_FUNCTION() test_power()
 
 
 /* -------------------------------------------------------------------------- */
@@ -88,6 +89,8 @@ void open_log(void);
 void usage (void);
 
 int compare_id(struct lgw_pkt_rx_s*);
+
+void test_power();
 
 /* -------------------------------------------------------------------------- */
 /* --- PRIVATE FUNCTIONS DEFINITION ----------------------------------------- */
@@ -391,13 +394,13 @@ int compare_id(struct lgw_pkt_rx_s *p){
 		 * MSG("Application router : %s \n", router_id);
 		 * MSG("Device router : %s \n", device_id);
 		 * */
-		return 1;
-	}else if(!strcmp(device_id,DEVICE_ID) && !strcmp(router_id,ROUTER_ID) && (p->status == STAT_CRC_OK) &&(p->payload[0]==1)){
-		return 2;
-	}else if(!strcmp(device_id,DEVICE_ID) && !strcmp(router_id,ROUTER_ID) && (p->status == STAT_CRC_OK) &&(p->payload[0]==2)){
-		return 3;
-	}else{
 		return 0;
+	}else if(!strcmp(device_id,DEVICE_ID) && !strcmp(router_id,ROUTER_ID) && (p->status == STAT_CRC_OK) &&(p->payload[0]==1)){
+		return 1;
+	}else if(!strcmp(device_id,DEVICE_ID) && !strcmp(router_id,ROUTER_ID) && (p->status == STAT_CRC_OK) &&(p->payload[0]==2)){
+		return 2;
+	}else{
+		return -1;
 	}
 }
 
@@ -472,6 +475,16 @@ void setParamTx(struct lgw_pkt_rx_s* received) {
 	join_response.payload[2]= 2;	
 }
 
+void construct_msg (){
+	
+	join_response.payload[0] = 1; //indicating that the message is a simple data message	
+	char *Device = DEVICE_ID;
+	char *Router = ROUTER_ID;
+
+	memcpy(join_response.payload+1, Device, 16);
+	memcpy(join_response.payload+17, Router, 16);
+	join_response.size = 33;
+}
 
 void function_test(struct lgw_pkt_rx_s* received) {
 	setParamTx(received);
@@ -480,9 +493,10 @@ void function_test(struct lgw_pkt_rx_s* received) {
 
 
 void send_join_response(struct lgw_pkt_rx_s* received) {
- 
 	setParamTx(received);
 	lgw_send(join_response);
+	join_response.tx_mode = IMMEDIATE;
+	TEST_FUNCTION();
 }
 
 void test_packet(){
@@ -498,9 +512,14 @@ void test_packet(){
 
 void test_power(){
 	int i,j;
+	sleep(6);
 	for(i=0 ; i < 8 ; i ++){
 		join_response.rf_power = 2 + i*2;
-		for(j=0 ; j < 30 ; j++){
+		//join_response.payload[0] = join_response.rf_power;
+		
+		for(j=0 ; j < 3 ; j++){
+			sleep(2);
+			construct_msg();
 			lgw_send(join_response);
 		}	
 	}
@@ -565,6 +584,7 @@ void test_sf(){
 }
 
 void test_bandwidth(){
+	
 	int i,j;
 	for(i=0 ; i < 3 ; i ++){
 		switch(i){
@@ -711,17 +731,17 @@ int main(int argc, char **argv)
 		for (i=0; i < nb_pkt; ++i) {
 			p = &rxpkt[i];
 			
-			if (compare_id(p)==1) {
+			if (compare_id(p)==0) {
 				if(packet_counter!=0){
 					write_results(average_snr,packet_counter,p);
 				}
 				send_join_response(p);
 				packet_counter=0;
 				average_snr=0;
-			}else if(compare_id(p)==2){
+			}else if(compare_id(p)==1){
 				packet_counter++;
 				average_snr+=p->snr;				
-			}else if(compare_id(p)==3){
+			}else if(compare_id(p)==2){
 				write_results(average_snr,packet_counter,p);
 				packet_counter=0;
 				average_snr=0;
