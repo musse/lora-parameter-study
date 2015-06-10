@@ -20,7 +20,7 @@ We are then able to mesure and identify its influence over the following perform
 
 The test scripts allow to you to make the mesurements both in **uplink** (object to concentrator) and **downlink** (concentrator to object) mode.
 
-Graphics showing the test's results are automatically generated. A raw `.csv` file with the raw test results is also created. Example results are provided in the folder `xxxxxxxx`.
+Graphics showing the test's results are automatically generated. A `.csv` file with the raw test results is also created. Example results are provided in the folder `xxxxxxxx`.
 
 ## Requirements
 
@@ -33,11 +33,29 @@ The tests were built using the following components:
 
 ### Software
 
+* Linux machine with the concentrator drivers, which can be installed by following the instructions given in the iC880A quick start guide (steps 3.1 to 3.5).
 * [IAR Embedded Workbench](https://www.iar.com/iar-embedded-workbench/): project files for the node's programs are provided. Alternatively, other toolchains may work; however, they haven't been tested and configuration is not provided.
 * [Python 2.7](https://www.python.org/)
-  * [matplotlib](http://matplotlib.org/index.html)
-  * [pandas](http://pandas.pydata.org/)
+  * [matplotlib](http://matplotlib.org/index.html): for generating the result graphics
+  * [pandas](http://pandas.pydata.org/): for parsing the csv files
 
 ## Usage
+
+A test sequence is made by varying one of the radio parameters and by fixing the others. The ensemble of packet sent with the same parameters in a test sequence is called a test series. The user is free to choose which parameter he wishes to vary, the fixed parameters values and the number of packets sent in each test series. According to the desired test mode, the steps to ajust this parameters are different:
+
+### Uplink
+
+1. Connect the node to the Windows machine in which IAR Workbench is installed. 
+2. Open the IAR's project for the node's uplink program, which is located in `lmic-release-v1.4-for-ensimag/lmic-release-v1.4/source/uplink_test/join.eww`.
+3. In the first lines of the file `lmic-release-v1.4-for-ensimag/lmic-release-v1.4/source/uplink_test/main.c`:
+	1. `#define` the constant corresponding to the desired test: `CRC_TEST`, `POW_TEST`, `CRC_TEST`, `SIZE_TEST` or `BW_TEST`. Only one of them can be defined a a time.
+	2. Change the value of the constants prefixed by `FIXED` to choose the fixed parameters of the test. The fixed value of the parameter which will be varied is not considered.
+	3. Change `MSGS_PER_SETTING` to choose the number of packets sent in each test series.
+4. Connect the concentrator to the Linux machine and execute the `uplink.sh` script located in the `scripts/` folder.
+5. When the concentrator is ready to receive the packets, compile and upload the node's code with IAR.
+6. After uploading it to the board, press the reset button to start it. The test will now be executed.
+7. When it is over, the graphics with the test results will be automatically generated and opened in the Linux machine, and they can then be saved as a image if so desired.
+
+### Downlink
 
 ## Limitations
