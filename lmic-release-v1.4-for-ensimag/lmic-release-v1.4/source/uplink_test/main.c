@@ -15,30 +15,38 @@
 
 // CONSTANTS AND MACROS
 
-// Uncomment desired test
+// define which test should be executed
+#define SF_TEST // POW_TEST, CRC_TEST, SIZE_TEST, BW_TEST
 
-/*
-#define UPDATE_TEST() testPow()
-#define TEST_STRING "POW"
-*/
+#ifdef POW_TEST
+    #define UPDATE_TEST() testPow()
+    #define TEST_STRING "POW"
+    #define TEST_NB 0
+ #endif
 
-/*
-#define UPDATE_TEST() testBw()
-#define TEST_STRING "BW"
-*/
+#ifdef BW_TEST
+    #define UPDATE_TEST() testBw()
+    #define TEST_STRING "BW"
+    #define TEST_NB 1
+#endif
 
-#define UPDATE_TEST() testSF()
-#define TEST_STRING "SF"
+#ifdef SF_TEST
+    #define UPDATE_TEST() testSF()
+    #define TEST_STRING "SF"
+    #define TEST_NB 2
+#endif
 
-/*
-#define UPDATE_TEST() testCRC()
-#define TEST_STRING "CRC"
-*/
+#ifdef CRC_TEST
+    #define UPDATE_TEST() testCRC()
+    #define TEST_STRING "CRC"
+    #define TEST_NB 3
+#endif
 
-/*
-#define UPDATE_TEST() testPacketSize()
-#define TEST_STRING "SIZE"
-*/
+#ifdef SIZE_TEST
+    #define UPDATE_TEST() testPacketSize()
+    #define TEST_STRING "SIZE"
+    #define TEST_NB 4
+#endif
 
 #define FIXED_CRC       CR_4_5
 #define FIXED_DR        DR_SF7
@@ -139,11 +147,27 @@ static void blinkfunc (osjob_t* j) {
     os_setTimedCallback(j, os_getTime()+ms2osticks(100), blinkfunc);
 }
 
+void sendTestEndMessage (void) {
+    LMIC.message_type = END_ALL_MESSAGE;
+
+    LMIC.pendTxConf = TX_REQ_ACK;
+    LMIC.pendTxPort = TX_PORT;
+
+    LMIC.pendTxData[0] = TEST_NB;
+    LMIC.pendTxData[1] = MSGS_PER_SETTING;
+    LMIC.pendTxLen = 2;
+
+    LMIC_setTxData();
+}
 
 void currentTestEnd (s4_t averageTime) {
-    LMIC.message_type = END_MESSAGE;
 
     u1_t sizeToSend = 0;
+    u1_t msgs_per_setting = MSGS_PER_SETTING;
+    u1_t test_type = TEST_NB;
+
+    LMIC.message_type = END_MESSAGE;
+
     os_copyMem(LMIC.pendTxData + sizeToSend, &LMIC.errcr, sizeof(LMIC.errcr));
     sizeToSend += sizeof(LMIC.errcr);
 
@@ -161,6 +185,12 @@ void currentTestEnd (s4_t averageTime) {
 
     os_copyMem(LMIC.pendTxData + sizeToSend, &averageTime, sizeof(s4_t));
     sizeToSend += sizeof(s4_t);
+
+    os_copyMem(LMIC.pendTxData + sizeToSend, &msgs_per_setting, sizeof(u1_t));
+    sizeToSend += sizeof(u1_t);
+
+    os_copyMem(LMIC.pendTxData + sizeToSend, &test_type, sizeof(u1_t));
+    sizeToSend += sizeof(u1_t);
 
     /*
     debug_val("coderate = ", LMIC.errcr);
@@ -342,6 +372,7 @@ void sendTestMessage (void) {
         }
 
         if (sizeToSend == TEST_FINISHED) {
+            sendTestEndMessage();
             testEnded = true;
             debug_str("\r\n");
             debug_str(TEST_STRING);
