@@ -65,6 +65,7 @@ int main () {
     os_init();
     // initialize debug library
     debug_init();
+    init_print();
     // setup initial job
     os_setCallback(&initjob, initfunc);
     // execute scheduled jobs and events
@@ -84,9 +85,14 @@ static u1_t ledstate = 0;
 void setParamRx(cr_t  newErrcr, u4_t newFreq,enum _sf_t newSF , bw_t newBw , dr_t newDr){
     LMIC.dn2Freq = newFreq;
     LMIC.errcr = newErrcr;
+    LMIC.datarate = newSF;
     LMIC.dn2Dr = newDr;
     LMIC.rps = setSf(LMIC.rps, newSF);
     LMIC.rps = setBw(LMIC.rps, newBw);
+    debug_val("freq : ", LMIC.dn2Freq);
+    debug_val("cr : ", LMIC.errcr);
+    debug_val("sf : ", LMIC.datarate);
+    debug_val("bw : ", getBw(LMIC.rps));
 }  
 
 
@@ -113,14 +119,14 @@ void onEvent (ev_t ev) {
     switch(ev) {
         // starting to join network
         case EV_JOINING:
-            debug_event(ev);
+            //debug_event(ev);
             debug_str("Started joining.\r\n");
             // start blinking
             blinkfunc(&blinkjob);
             break;
 
         case EV_JOINED:
-            debug_event(ev);
+            //debug_event(ev);
             // join complete
             debug_str("Joined, sending first message.\r\n");
             debug_led(1);
