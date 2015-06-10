@@ -61,7 +61,6 @@ static void initfunc (osjob_t* j) {
 // application entry point
 int main () {
     osjob_t initjob;
-
     // initialize runtime env
     os_init();
     // initialize debug library
@@ -82,15 +81,17 @@ int main () {
 static osjob_t blinkjob;
 static u1_t ledstate = 0;
 
-static void receive_packet(enum _cr_t newErrcr, u4_t newFreq, enum _sf_t newSF , enum _bw_t newBw , enum _dr_eu868_t newDr){ 
-  
+void setParamRx(cr_t  newErrcr, u4_t newFreq,enum _sf_t newSF , bw_t newBw , dr_t newDr){
     LMIC.dn2Freq = newFreq;
     LMIC.errcr = newErrcr;
     LMIC.dn2Dr = newDr;
     LMIC.rps = setSf(LMIC.rps, newSF);
-    LMIC.rps = setBw(LMIC.rps, newBw);   
-    LMIC_setRxData();
-    
+    LMIC.rps = setBw(LMIC.rps, newBw);
+}  
+
+
+static void receive_packet(){  
+    LMIC_setRxData();    
 }
 
 static void blinkfunc (osjob_t* j) {
@@ -108,7 +109,7 @@ static void blinkfunc (osjob_t* j) {
 
 void onEvent (ev_t ev) {
   
-
+    debug_event(ev);
     switch(ev) {
         // starting to join network
         case EV_JOINING:
@@ -123,13 +124,14 @@ void onEvent (ev_t ev) {
             // join complete
             debug_str("Joined, sending first message.\r\n");
             debug_led(1);
-            os_clearCallback(&blinkjob); 
-            receive_packet(CR_4_7,868300000, SF7, BW125, DR_SF7);
+            os_clearCallback(&blinkjob);            
+            receive_packet();
             break;
 
         // network joined, session established
         case EV_RXCOMPLETE:
-            receive_packet(CR_4_7,868300000, SF7, BW125,DR_SF7);
+            receive_packet(); 
+            //receive_packet(CR_4_5,869525000, SF12, BW125,DR_SF12);
             break;
     }
 }

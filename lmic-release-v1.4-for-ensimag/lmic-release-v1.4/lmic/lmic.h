@@ -258,6 +258,8 @@ void  LMIC_setTxData    (void);
 int   LMIC_setTxData2   (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed);
 void  LMIC_sendAlive    (void);
 
+void setParamRx(cr_t newErrcr, u4_t newFreq, enum _sf_t newSF , bw_t newBw , dr_t newDr);
+
 bit_t LMIC_enableTracking  (u1_t tryBcnInfo);
 void  LMIC_disableTracking (void);
 
