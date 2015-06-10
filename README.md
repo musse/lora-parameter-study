@@ -34,10 +34,10 @@ The tests were built using the following components:
 ### Software
 
 * Linux machine with the concentrator drivers, which can be installed by following the instructions given in the iC880A quick start guide (steps 3.1 to 3.5).
-* [IAR Embedded Workbench](https://www.iar.com/iar-embedded-workbench/): project files for the node's programs are provided. Alternatively, other toolchains may work; however, they haven't been tested and configuration is not provided.
-* [Python 2.7](https://www.python.org/)
-  * [matplotlib](http://matplotlib.org/index.html): for generating the result graphics
-  * [pandas](http://pandas.pydata.org/): for parsing the csv files
+	* [Python 2.7](https://www.python.org/)
+	  * [matplotlib](http://matplotlib.org/index.html): for generating the result graphics
+	  * [pandas](http://pandas.pydata.org/): for parsing the csv files
+* A Windows machine with [IAR Embedded Workbench](https://www.iar.com/iar-embedded-workbench/): project files for the node's programs are provided. Alternatively, other toolchains may work; however, they haven't been tested and configuration is not provided.
 
 ## Usage
 
@@ -62,3 +62,9 @@ A test sequence is made by varying one of the radio parameters and by fixing the
 
 * Even though the LoRa protocol and the test boards support a 500 kHz bandwith, the bandwith test does not currently implements it.
 
+## Credits
+
+* The node's code uses a heavily modified version of [LMIC](https://github.com/mirakonta/lmic). It was changed so that we have more flexibility to choose the radio parameters as we want.
+* The concentrator's programs are heavily inspired in the [pkt_logger](https://github.com/Lora-net/lora_gateway/tree/master/util_pkt_logger) example of the [lora_gateway](https://github.com/Lora-net/lora_gateway) project.
+
+## License
