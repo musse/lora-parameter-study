@@ -5,7 +5,8 @@
 enum _msg_type_t{
     JOIN_MESSAGE = 0x00,
     TEST_MESSAGE = 0x01,
-    END_MESSAGE  = 0x02
+    END_MESSAGE  = 0x02,
+    END_ALL_MESSAGE = 0x03
 };
 typedef enum _msg_type_t msg_type_t;
 
