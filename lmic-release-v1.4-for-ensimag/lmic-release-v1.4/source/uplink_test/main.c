@@ -15,8 +15,21 @@
 
 // CONSTANTS AND MACROS
 
-// define which test should be executed
+// constants to define the test parameters
+
 #define CRC_TEST // POW_TEST, CRC_TEST, SIZE_TEST, BW_TEST
+
+#define FIXED_CRC       CR_4_5
+#define FIXED_DR        DR_SF7
+#define FIXED_SF        SF7
+#define FIXED_POW       14
+#define FIXED_BW        BW125
+#define FIXED_FREQ      EU868_F6
+#define FIXED_SIZE      8
+
+#define MSGS_PER_SETTING 5
+
+// constants internal to the test, not to be changed
 
 #ifdef POW_TEST
     #define UPDATE_TEST() testPow()
@@ -48,15 +61,6 @@
     #define TEST_NB 4
 #endif
 
-#define FIXED_CRC       CR_4_5
-#define FIXED_DR        DR_SF7
-#define FIXED_SF        SF7
-#define FIXED_POW       14
-#define FIXED_BW        BW125
-#define FIXED_FREQ      EU868_F6
-#define FIXED_SIZE      8
-
-#define MSGS_PER_SETTING 5
 
 #define ARRAY_FILLER    0x33 // value for filling unused tx array positions
 #define TEST_FINISHED   0xFF
