@@ -11,6 +11,8 @@ csv_file_path = sys.argv[1]
 results = pandas.read_csv(csv_file_path)
 
 y_snr = [float(i) for i in results.snr]
+y_snr_std_dev = [float(i) for i in results.std_dev_snr]
+y_time_std_dev = [int(i) for i in results.std_dev_time]
 y_pkt_loss = (numpy.array([(int(results.msgs_per_setting[0]) - int(i)) for i in results['pkt_count']]) / float(results.msgs_per_setting[0])) * 100.0
 y_time = [int(i) for i in results['avg_time']]
 
@@ -57,7 +59,9 @@ else:
 f.suptitle(test_title, fontsize=16, fontweight='bold')
 
 snr_ax.set_title("Signal-to-noise ratio")
-snr_ax.plot(x, y_snr, '-ro')
+eb1 = snr_ax.errorbar(x, y_snr, yerr=y_snr_std_dev, marker='o', clip_on=False)
+eb1[-1][0].set_linestyle('--')
+#snr_ax.plot(x, y_snr, '-ro')
 snr_ax.set_ylabel("SNR (in dB)")
 
 #snr_ax.vlines(x, [-4.0 ], y_snr,  linestyles='dashed')
@@ -67,7 +71,9 @@ pkt_loss_ax.plot(x, y_pkt_loss, '-ro')
 pkt_loss_ax.set_ylabel("Packet loss (%)")
 
 time_ax.set_title("Average transmission time")
-time_ax.plot(x, y_time, '-ro')
+#time_ax.plot(x, y_time, '-ro')
+eb1 = time_ax.errorbar(x, y_time, yerr=y_time_std_dev, marker='o', clip_on=False)
+eb1[-1][0].set_linestyle('--')
 time_ax.set_ylabel("Average tx time (in ms)")
 
 plt.figtext(0.5, 0.05, 'Fixed parameters', horizontalalignment='center', fontsize=15)

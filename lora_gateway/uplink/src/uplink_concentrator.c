@@ -16,6 +16,7 @@
 #include <time.h>		/* time clock_gettime strftime gmtime clock_nanosleep*/
 #include <unistd.h>		/* getopt access */
 #include <stdlib.h>		/* atoi */
+#include <math.h>
 
 #include "parson.h"
 #include "loragw_hal.h"
@@ -35,6 +36,8 @@
 #define END_TEST_MSG 3
 #define ALL_TESTS_ENDED_MSG 4
 #define INVALID_MSG -1
+
+#define MAX_MSGS_PER_SETTING 100
 
 // PRIVATE MACROS
 
@@ -57,8 +60,10 @@ time_t now_time;
 time_t log_start_time;
 static int size = 0;
 
-char *result_file_name = "results.txt";
+char *result_file_name = "results.csv";
 FILE* result_file = NULL;
+
+float snr[MAX_MSGS_PER_SETTING];
 
 // PRIVATE FUNCTIONS DECLARATION
 
@@ -397,10 +402,20 @@ int compare_id(struct lgw_pkt_rx_s *p) {
 	}
 }
 
-void write_results(float snr, int counter, struct lgw_pkt_rx_s* p) {
+void write_results(int counter, struct lgw_pkt_rx_s* p) {
 	
-    float average_snr = snr / counter;   
+    float average_snr = 0;
+    for (int i = 0; i < counter; i++)
+        average_snr += snr[i];
+    average_snr /= counter;  
 	
+    float variance_snr = 0;
+    for (int i = 0; i < counter; i++)
+        variance_snr += pow((snr[i] - average_snr), 2);
+    variance_snr /= counter;
+
+    float std_dev_snr = sqrt(variance_snr);
+
     if (result_file != NULL)
     {
 
@@ -448,6 +463,11 @@ void write_results(float snr, int counter, struct lgw_pkt_rx_s* p) {
 
 		fprintf(result_file, "%i", p->payload[26]); // test type
 
+		int std_dev_time = p->payload[27] + (p->payload[28] <<8) + (p->payload[29] <<16) + (p->payload[30] <<24);
+		fprintf(result_file, "%i,", std_dev_time); // standard deviation of tx time
+
+		fprintf(result_file, "%+4.1f", std_dev_snr); // standard deviation of SNR
+
 		fputs("\n", result_file);
     }
 }
@@ -483,7 +503,7 @@ void openResultFile() {
     	MSG("ERROR: could not open result file.\n");
     	return;
     }
-    fputs("snr,pkt_count,crc,dr,bw,pow,avg_time,size,msgs_per_setting,test_type\n", result_file);
+    fputs("snr,pkt_count,crc,dr,bw,pow,avg_time,size,msgs_per_setting,test_type,std_dev_time,std_dev_snr\n", result_file);
 }
 
 // MAIN FONCTION
@@ -493,7 +513,6 @@ int main(int argc, char **argv)
 	int i; /* loop and temporary variables */
 	struct timespec sleep_time = {0, 3000000}; /* 3 ms */
 	
-	float average_snr = 0;
 	int packet_counter = 0;
 	
 	/* allocate memory for packet fetching and processing */
@@ -565,22 +584,20 @@ int main(int argc, char **argv)
 					MSG("Sending join response.\n");
 					send_join_response(p);
 					packet_counter = 0;
-					average_snr = 0;
 					size = 0;
 					break;
 				case TEST_MSG:
+					snr[packet_counter] = p->snr;
 					packet_counter++;
 					size = p->size;
-					average_snr += p->snr;
 					break;
 				case END_TEST_MSG:
 					if (packet_counter != 0) {				
-						write_results(average_snr, packet_counter, p);
+						write_results(packet_counter, p);
 						MSG("Ended series: %i packets received.\n", packet_counter);
 					}
 					packet_counter = 0;
 					size = 0;
-					average_snr = 0;
 					break;
 				case ALL_TESTS_ENDED_MSG:
 					exit_sig = 1; // ending program

@@ -138,6 +138,7 @@ int main () {
 static osjob_t blinkjob;
 static u1_t ledstate = 0;
 bool testEnded = false;
+s4_t tx_time[MSGS_PER_SETTING];
 
 static void blinkfunc (osjob_t* j) {
     // toggle LED
@@ -160,13 +161,35 @@ void sendTestEndMessage (void) {
     LMIC_setTxData();
 }
 
-void currentTestEnd (s4_t averageTime) {
+void currentTestEnd () {
 
     u1_t sizeToSend = 0;
     u1_t msgs_per_setting = MSGS_PER_SETTING;
     u1_t test_type = TEST_NB;
 
     LMIC.message_type = END_MESSAGE;
+
+    s4_t averageTime = 0;
+    for (u1_t i = 0; i < MSGS_PER_SETTING; i++)
+        averageTime += tx_time[i];
+    averageTime /= MSGS_PER_SETTING;
+
+    s4_t variance = 0;
+    for (u1_t i = 0; i < MSGS_PER_SETTING; i++)
+        variance += (tx_time[i] - averageTime) * (tx_time[i] - averageTime);
+    variance /= MSGS_PER_SETTING;
+
+    s4_t std_deviation = 0;
+    u1_t = 1;
+    while(1) {
+        if (i*i > variance) {
+            std_deviation = i;
+            break;
+        } else {
+            i++;
+            continue;
+        }
+    }
 
     os_copyMem(LMIC.pendTxData + sizeToSend, &LMIC.errcr, sizeof(LMIC.errcr));
     sizeToSend += sizeof(LMIC.errcr);
@@ -191,6 +214,9 @@ void currentTestEnd (s4_t averageTime) {
 
     os_copyMem(LMIC.pendTxData + sizeToSend, &test_type, sizeof(u1_t));
     sizeToSend += sizeof(u1_t);
+
+    os_copyMem(LMIC.pendTxData + sizeToSend, &std_deviation, sizeof(s4_t));
+    sizeToSend += sizeof(s4_t);
 
     /*
     debug_val("coderate = ", LMIC.errcr);
@@ -350,14 +376,13 @@ void sendTestMessage (void) {
     static u1_t sizeToSend;
 
     if (currentSettingsCount == MSGS_PER_SETTING) {
-        s4_t averageTime = (osticks2ms(os_getTime()) - timeStart) / MSGS_PER_SETTING;
+
+        tx_time[MSGS_PER_SETTING - 1] = osticks2ms(os_getTime()) - timeStart;
         currentSettingsCount = 0;
-        currentTestEnd(averageTime);
+        currentTestEnd();
     } else {
         if (currentSettingsCount == 0) {
             
-            timeStart = osticks2ms(os_getTime());
-
             debug_str("\r\n");
             sizeToSend = UPDATE_TEST();
                         
@@ -378,6 +403,12 @@ void sendTestMessage (void) {
             debug_str(TEST_STRING);
             debug_str(" : test has finished.\r\n");
         } else {
+            s4_t currentTime = osticks2ms(os_getTime());
+            if (currentSettingsCount > 0) {
+                tx_time[currentSettingsCount - 1] = currentTime - timeStart;
+            }
+            timeStart = currentTime;
+
             debug_hex(currentSettingsCount);
             debug_str(" ");
             // sends message

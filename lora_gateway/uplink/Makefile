@@ -31,7 +31,7 @@ LGW_INC += $(LGW_PATH)/inc/loragw_hal.h
 ifeq ($(CFG_SPI),native)
   LIBS := -lloragw -lrt
 else ifeq ($(CFG_SPI),ftdi)
-  LIBS := -lloragw -lrt -lmpsse
+  LIBS := -lloragw -lrt -lmpsse -lm
 endif
 
 ### General build targets
