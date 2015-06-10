@@ -16,7 +16,7 @@
 // CONSTANTS AND MACROS
 
 // define which test should be executed
-#define SF_TEST // POW_TEST, CRC_TEST, SIZE_TEST, BW_TEST
+#define CRC_TEST // POW_TEST, CRC_TEST, SIZE_TEST, BW_TEST
 
 #ifdef POW_TEST
     #define UPDATE_TEST() testPow()
@@ -180,7 +180,7 @@ void currentTestEnd () {
     variance /= MSGS_PER_SETTING;
 
     s4_t std_deviation = 0;
-    u1_t = 1;
+    u4_t i = 1;
     while(1) {
         if (i*i > variance) {
             std_deviation = i;
@@ -190,7 +190,7 @@ void currentTestEnd () {
             continue;
         }
     }
-
+   
     os_copyMem(LMIC.pendTxData + sizeToSend, &LMIC.errcr, sizeof(LMIC.errcr));
     sizeToSend += sizeof(LMIC.errcr);
 
