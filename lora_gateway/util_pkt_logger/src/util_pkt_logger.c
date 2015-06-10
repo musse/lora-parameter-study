@@ -47,13 +47,44 @@ Maintainer: Sylvain Miermont
 #define JOIN_RESPONSE_DELAY 2000000 // 6 seconds in us
 #define JOIN_RF_CHAIN 0
 #define JOIN_RESPONSE_POWER 14
-
+#define MSG_PER_SETTING 5
 /* -------------------------------------------------------------------------- */
 /* --- PRIVATE MACROS ------------------------------------------------------- */
 
+#define CRC_TEST // POW_TEST, CRC_TEST, SIZE_TEST, BW_TEST
+
+#ifdef POW_TEST
+    #define UPDATE_TEST() test_power()
+    #define TEST_STRING "POW"
+    #define TEST_NB 0
+ #endif
+
+#ifdef BW_TEST
+    #define UPDATE_TEST() test_bandwidth()
+    #define TEST_STRING "BW"
+    #define TEST_NB 1
+#endif
+
+#ifdef SF_TEST
+    #define UPDATE_TEST() test_sf()
+    #define TEST_STRING "SF"
+    #define TEST_NB 2
+#endif
+
+#ifdef CRC_TEST
+    #define UPDATE_TEST() test_coderate()
+    #define TEST_STRING "CRC"
+    #define TEST_NB 3
+#endif
+
+#ifdef SIZE_TEST
+    #define UPDATE_TEST() test_packet()
+    #define TEST_STRING "SIZE"
+    #define TEST_NB 4
+#endif
+
 #define ARRAY_SIZE(a)	(sizeof(a) / sizeof((a)[0]))
 #define MSG(args...)	fprintf(stderr,"loragw_pkt_logger: " args) /* message that is destined to the user */
-#define TEST_FUNCTION() test_power()
 
 
 /* -------------------------------------------------------------------------- */
@@ -483,32 +514,37 @@ void construct_msg (){
 	join_response.size = 1;
 }
 
-void construct_end_msg(){
+void construct_start_msg(uint8_t bandwidth, uint8_t coderate, uint8_t datarate, uint8_t power, uint8_t size){
 	int end = 0;
 	
 	join_response.payload[0] = 2;
 	end += 1;
-	memcpy(join_response.payload+end, &join_response.coderate, sizeof(join_response.coderate));
+	memcpy(join_response.payload+end, &coderate, sizeof(coderate));
 	end += sizeof(join_response.coderate);
-	memcpy(join_response.payload+end, &join_response.datarate, sizeof(uint8_t));
-	end += sizeof(uint8_t);
-	memcpy(join_response.payload+end, &join_response.bandwidth, sizeof(join_response.bandwidth));
-	end+= sizeof(join_response.bandwidth);
-	memcpy(join_response.payload+end, &join_response.rf_power, sizeof(join_response.rf_power));
-	end += sizeof(join_response.rf_power);
-	
+	memcpy(join_response.payload+end, &datarate, sizeof(datarate));
+	end += sizeof(datarate);
+	memcpy(join_response.payload+end, &bandwidth, sizeof(bandwidth));
+	end+= sizeof(bandwidth);
+	memcpy(join_response.payload+end, &power, sizeof(power));
+	end += sizeof(power);
+	memcpy(join_response.payload+end, &size, sizeof(size));
+	end += sizeof(size);
+	uint8_t msg_per_setting = MSG_PER_SETTING;
+	memcpy(join_response.payload+end, &msg_per_setting, sizeof(MSG_PER_SETTING));
+	end += sizeof(MSG_PER_SETTING);
+	uint8_t test_number = TEST_NB;
+	memcpy(join_response.payload+end, &test_number, sizeof(TEST_NB));
+	end += sizeof(TEST_NB);
 	join_response.size = end;
 	
 }
 
-/*void function_test(struct lgw_pkt_rx_s* received) {
-	setParamTx(received);
-	TEST_FUNCTION();	
-}
-*/
+void construct_end_msg(){
+		join_response.payload[0] = 3;
+		join_response.size = 1;
+	}
 
-
-
+/*
 void wait_response(){
 	struct lgw_pkt_rx_s rxpkt[16];
 	struct lgw_pkt_rx_s *p;
@@ -517,7 +553,6 @@ void wait_response(){
 	struct timespec sleep_time = {0, 3000000};
 	
 	while(param_response==0){
-		 //printf("\n while\n");	
 		 sleep(5);
 		 nb_pkt = lgw_receive(ARRAY_SIZE(rxpkt), rxpkt);
 		 //sleep(3);
@@ -525,171 +560,180 @@ void wait_response(){
 		 if(nb_pkt>0){
 			 for (i=0; i < nb_pkt; ++i) {
 				 p = &rxpkt[i];
-				 /*int j;
+				 int j;
 				 for(j = 0; j < p->size; j++)
-					printf("%i", p->payload[0]);*/
+					printf("%i", p->payload[0]);
 				 if(p->payload[0]==1){
-					// printf("xxxxxxxxxxxxxxxxxxxxxxxxxx");
 					 param_response = 1;
 					 break;					 
 				 }
 			 }
 		 }
 		 if (param_response == 0){
-		 //printf("gggggggggggggggggggg");	 
 		 clock_nanosleep(CLOCK_MONOTONIC, 0, &sleep_time, NULL);
-		 construct_end_msg();
+		 //construct_start_msg();
 		 lgw_send(join_response);
 	 }
 	}
-	//printf("eu sai da funcao");
-}
+}*/
 
 void test_packet(){
-	int i,j;
+	int i,j,next_packet_size;
 	sleep(6);
 	for(i=0 ; i < 10 ; i ++){
-		join_response.size = i*5;
+		next_packet_size = i*5;
+		construct_start_msg(join_response.bandwidth, join_response.coderate,join_response.datarate, 14, next_packet_size);
+		lgw_send(join_response);		
+		sleep(1);
+		join_response.size=next_packet_size;	
 		for(j=0 ; j < 30 ; j++){
 			sleep(1);
 			construct_msg();
 			lgw_send(join_response);
 		}	
-		sleep(1);		
-		construct_end_msg();
-		lgw_send(join_response);
-		wait_response();	
+		sleep(1);	
 	}
+	construct_end_msg();
+	lgw_send(join_response);	
 }
 
 
 void test_power(){
-	int i,j;
-	sleep(6);
+	int i,j,next_power;
+	sleep(2);
 	for(i=0 ; i < 8 ; i ++){
-		join_response.rf_power = 2 + i*2;
-		//join_response.payload[0] = join_response.rf_power;
-		
-		for(j=0 ; j < 3; j++){
-			//printf("\nmensagem %d", i);
+		next_power = 2 + i*2;
+		construct_start_msg(join_response.bandwidth, join_response.coderate,join_response.datarate, next_power, join_response.size);
+		lgw_send(join_response);
+		sleep(1);
+		join_response.rf_power = next_power;
+		for(j=0 ; j < MSG_PER_SETTING; j++){
 			sleep(1);
 			construct_msg();
 			lgw_send(join_response);
 		}
-		sleep(1);		
-		construct_end_msg();
-		lgw_send(join_response); 
-		//wait_response();
+		sleep(1);
 	}
+	construct_end_msg();
+	lgw_send(join_response);
 }
 
 
 void test_coderate(){
-	int i,j;
-	sleep(6);
+	int i,j,next_coderate;
+	sleep(3);
 	for(i=0 ; i < 4 ; i ++){
 		switch(i){
 			case 0 : 
-				join_response.coderate=CR_LORA_4_5;
+				next_coderate=CR_LORA_4_5;
 				break;
 			case 1 : 
-				join_response.coderate=CR_LORA_4_6;
+				next_coderate=CR_LORA_4_6;
 				break;
 			case 2 : 
-				join_response.coderate=CR_LORA_4_7;
+				next_coderate=CR_LORA_4_7;
 				break;
-			case 3 : 
-				join_response.coderate=CR_LORA_4_8;
+			case 3 :
+				next_coderate=CR_LORA_4_8;
 				break;
 			default : 
 				break;
 		}
-		for(j=0 ; j < 30 ; j++){
+		construct_start_msg(join_response.bandwidth, next_coderate,join_response.datarate, 14, join_response.size);
+		lgw_send(join_response);
+		sleep(1);
+		join_response.coderate=next_coderate;
+		for(j=0 ; j < MSG_PER_SETTING ; j++){
 			sleep(1);
 			construct_msg();
 			lgw_send(join_response);
 		}
-		sleep(1);		
-		construct_end_msg();
-		lgw_send(join_response);
-		wait_response();	
+		sleep(1);	
 	}
+	construct_end_msg();
+	lgw_send(join_response);
 }
 
 
 void test_sf(){
-	int i,j;
+	int i,j,next_datarate;
 	sleep(6);
 	for(i=0 ; i < 6 ; i ++){
 		switch(i){
 			case 1 : 
-				join_response.datarate=DR_LORA_SF7;
+				next_datarate=DR_LORA_SF7;
 				break;
 			case 2 : 
-				join_response.datarate=DR_LORA_SF8;
+				next_datarate=DR_LORA_SF8;
 				break;
 			case 3 : 
-				join_response.datarate=DR_LORA_SF9;
+				next_datarate=DR_LORA_SF9;
 				break;
 			case 4 : 
-				join_response.datarate=DR_LORA_SF10;
+				next_datarate=DR_LORA_SF10;
 				break;
 			case 5 : 
-				join_response.datarate=DR_LORA_SF11;
+				next_datarate=DR_LORA_SF11;
 				break;
 			case 0 : 
-				join_response.datarate=DR_LORA_SF12;
+				next_datarate=DR_LORA_SF12;
 				break;
 			default : 
 				break;
 		}
-		for(j=0 ; j < 3 ; j++){
+		construct_start_msg(join_response.bandwidth, join_response.coderate,next_datarate, 14, join_response.size);
+		lgw_send(join_response);
+		sleep(1);
+		join_response.datarate=next_datarate;
+		for(j=0 ; j < MSG_PER_SETTING ; j++){
 			sleep(1);
 			construct_msg();
 			lgw_send(join_response);
 		}
 		sleep(1);		
-		construct_end_msg();
-		lgw_send(join_response);
-		//wait_response();	
 	}
+	construct_end_msg();
+	lgw_send(join_response);
 }
 
 void test_bandwidth(){
 	
-	int i,j;
-	sleep(6);
+	int i,j,next_bandwidth;
+	sleep(2);
 	for(i=0 ; i < 3 ; i ++){
+		sleep(1);
 		switch(i){
 			case 0 : 
-				join_response.bandwidth=BW_125KHZ;
+				next_bandwidth=BW_125KHZ;
 				break;
 			case 1 : 
-				join_response.bandwidth=BW_250KHZ;
+				next_bandwidth=BW_250KHZ;
 				break;
 			case 2 : 
-				join_response.bandwidth=BW_500KHZ;
+				next_bandwidth=BW_500KHZ;
 				break;
 			default : 
 				break;
 		}
-		for(j=0 ; j < 30 ; j++){
-			
+		construct_start_msg(next_bandwidth, join_response.coderate,join_response.datarate, 14, join_response.size);
+		lgw_send(join_response);
+		sleep(1);
+		join_response.bandwidth=next_bandwidth;
+		for(j=0 ; j < MSG_PER_SETTING ; j++){
+			sleep(1);
+			construct_msg();
 			lgw_send(join_response);
 		}	
 	}
-		sleep(1);		
-		construct_end_msg();
-		lgw_send(join_response);
-		wait_response();
+	construct_end_msg();
+	lgw_send(join_response);
 }
 
 void send_join_response(struct lgw_pkt_rx_s* received) {
 	setParamTx(received);
 	lgw_send(join_response);
 	join_response.tx_mode = IMMEDIATE;
-	test_power();
-	//TEST_FUNCTION();
+	UPDATE_TEST();
 }
 
 /* -------------------------------------------------------------------------- */
