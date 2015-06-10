@@ -457,11 +457,11 @@ void write_results(int counter, struct lgw_pkt_rx_s* p) {
 		int average_time = p->payload[21] + (p->payload[22] <<8) + (p->payload[23] <<16) + (p->payload[24] <<24);
 		fprintf(result_file, "%i,", average_time); // average tx time
 
-		fprintf(result_file, "%i", size); // packet size
+		fprintf(result_file, "%i,", size); // packet size
 
-		fprintf(result_file, "%i", p->payload[25]); // messages per setting
+		fprintf(result_file, "%i,", p->payload[25]); // messages per setting
 
-		fprintf(result_file, "%i", p->payload[26]); // test type
+		fprintf(result_file, "%i,", p->payload[26]); // test type
 
 		int std_dev_time = p->payload[27] + (p->payload[28] <<8) + (p->payload[29] <<16) + (p->payload[30] <<24);
 		fprintf(result_file, "%i,", std_dev_time); // standard deviation of tx time
