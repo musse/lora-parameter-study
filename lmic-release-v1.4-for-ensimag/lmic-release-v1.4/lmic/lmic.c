@@ -21,6 +21,7 @@
 #define PAMBL_FSK  5
 #define PRERX_FSK  1
 #define RXLEN_FSK  (1+5+2)
+#define LENGTH_TEST 30
 
 #define BCN_INTV_osticks       sec2osticks(BCN_INTV_sec)
 #define TXRX_GUARD_osticks     ms2osticks(TXRX_GUARD_ms)
@@ -232,6 +233,10 @@ const u1_t _DR2RPS_CRC[] = {
     (u1_t)MAKERPS(FSK,  BW125, CR_4_5, 0, 0),
     ILLEGAL_RPS
 };
+
+int counter;
+int buffer[LENGTH_TEST];
+int snr;
 
 static const s1_t TXPOWLEVELS[] = {
     20, 14, 11, 8, 5, 2, 0,0, 0,0,0,0, 0,0,0,0
@@ -662,7 +667,7 @@ static void setBcnRxParams (void) {
 //#define setRx1Params() /*LMIC.freq/rps remain unchanged*/
 
 static void initJoinLoop (void) {
-    debug_str("initJoinLoop() from line 687 is called.\r\n");
+    //debug_str("initJoinLoop() from line 687 is called.\r\n");
     LMIC.txChnl = /*TX_CHANNEL;*/ os_getRndU1() % 6;
     LMIC.adrTxPow = 14;
     setDrJoin(DRCHG_SET, DR_SF7);
@@ -674,7 +679,7 @@ static void initJoinLoop (void) {
 
 static ostime_t nextJoinState (void) {
     u1_t failed = 0;
-    debug_str("Entered nextJoinState() (shouldn't be here?).\r\n");
+    //debug_str("Entered nextJoinState() (shouldn't be here?).\r\n");
     // Try 869.x and then 864.x with same DR
     // If both fail try next lower datarate
     if( ++LMIC.txChnl == 6 )
@@ -1082,13 +1087,20 @@ static bit_t decodeFrame (void) {
 
 
 static void setupRx2 (void) {
+ 
+             
+    //debug_str("-");
     LMIC.txrxFlags = TXRX_DNW2;
     if ((LMIC.opmode & OP_JOINING) != 0) { // if joining                
         LMIC.rps = dndr2rps(LMIC.dn2Dr);
-    }   
+    }  
     LMIC.freq = LMIC.dn2Freq;
     LMIC.dataLen = 0;
-    os_radio(RADIO_RXON);
+    //debug_val("freq : ", LMIC.dn2Freq);
+    //debug_val("cr : ", LMIC.errcr);
+    //debug_val("sf : ", LMIC.datarate);
+    //debug_val("bw : ", getBw(LMIC.rps));
+    os_radio(RADIO_RXON); //TODO a modifier selon uplink ou downlink
 }
 
 
@@ -1225,22 +1237,205 @@ static bit_t processJoinAccept (void) {
     return 1;
 }
 
-static void processRx2Jacc (xref2osjob_t osjob) {
+void init_print(void){
+  debug_str("\rDOWNLINK\r\nsnr,pkt_count,crc,dr,bw,pow,avg_time,size,msgs_per_setting,test_type\r\n");  
+}
 
+// a modifier dans le lmic
+static void read_package(){
+    snr += LMIC.snr;
+    buffer[counter]=LMIC.snr;
+    debug_str("-------------\n\r");
+    counter++;
+    
+   // setParamRx(CR_4_5,869525000, SF12, BW125, DR_SF12);
+}
+
+// a modifier dans le lmic
+static void change_reception_parameters(){
+    //debug_val("freq : ", LMIC.dn2Freq);
+    //debug_val("cr : ", LMIC.errcr);
+    //debug_val("sf : ", LMIC.datarate);
+    //debug_val("bw : ", getBw(LMIC.rps));
+    cr_t cr;
+    enum _sf_t sf;
+    bw_t bw;
+    dr_t dr;
+    u4_t freq;
+    int  power;
+    cr = LMIC.frame[1]-1; // we decrement 1 to respect the number notation of the variables received CR_4_5
+    switch(LMIC.frame[1]){
+        case 1: 
+            cr = CR_4_5;
+            break;
+        case 2 : 
+            cr = CR_4_6;
+            break;
+        case 3 : 
+            cr = CR_4_7;
+            break;
+        case 4 : 
+            cr = CR_4_8;
+            break;
+        default : break;  
+    }
+    switch(LMIC.frame[2]){
+        case 0x2 : sf = SF7;
+            dr = DR_SF7;
+            break;
+        case 0x4 : sf = SF8;
+            dr = DR_SF8;
+            break;
+        case 0x8 : sf = SF9;
+            dr = DR_SF9;
+            break;
+        case 0x10: sf = SF10;
+            dr = DR_SF10;
+            break;
+        case 0x20 : sf = SF11;
+            dr = DR_SF11;
+            break;
+        case 0x40 :        
+            sf = SF12;
+            dr = DR_SF12;
+            break;
+        default :        
+            break;  
+    }
+    switch(LMIC.frame[3]){
+        case 3 : 
+            bw = BW125;
+            break;
+        case 2 : 
+            bw = BW250;
+            break;
+        case 1 : 
+            bw = BW500;
+            break;
+        default : 
+          break;  
+    }
+    power  = LMIC.frame[4];
+    freq = EU868_F6;
+    //debug_str("\r\n changement de paramètre");
+    //debug_val("freq : ", freq);
+    //debug_val("cr : ", cr);
+    //debug_val("sf : ", sf);
+    //debug_val("bw : ", bw);
+    if(LMIC.dataLen == 0x0E){
+      debug_str("\r\n ok");
+        //setTxParameters(CR_4_5,DR_SF12, SF12,14, BW125,EU868_F6);
+        LMIC.message_type=END_MESSAGE;
+        u1_t data = 1;
+        //LMIC_setTxData2(1,&data,1,0);
+        //LMIC.opmode=0x000000800;
+        setParamRx(cr,freq, sf, bw, dr);
+    }else{
+        debug_val("LMIC.DATALEN ==", LMIC.dataLen);
+        debug_str(" Problem with parameters changing");
+    }    
+}
+
+
+static void write_results(void){
+    int moy_snr = snr / counter;
+    //Average SNR
+    debug_hex(moy_snr);
+    //Num of packets
+    debug_str(",");
+    debug_hex(counter);
+    //Code rate
+    switch(LMIC.errcr){
+        case CR_4_5:
+          debug_str(",4/5");
+          break;
+        case CR_4_6:
+          debug_str(",4/6");
+          break;
+        case CR_4_7:
+          debug_str(",4/7");
+          break;
+        case CR_4_8:
+          debug_str(",4/8");
+          break;
+        default:
+          debug_str(",ERR");
+          break;
+    }
+    //Data rate
+    switch(LMIC.datarate){
+        case DR_SF12:
+          debug_str(",SF12");
+          break;
+        case DR_SF11:
+          debug_str(",SF11");
+          break;
+        case DR_SF10:
+          debug_str(",SF10");
+          break;
+        case DR_SF9:
+          debug_str(",SF9");
+          break;
+        case DR_SF8:
+          debug_str(",SF8");
+          break;
+        case DR_SF7:
+          debug_str(",SF7");
+          break;
+        default:
+          debug_str(",ERR");
+          break;
+    }//Bandwith
+    switch(getBw(LMIC.rps)){
+        case BW125:
+          debug_str(",125");
+          break;
+        case BW250:
+          debug_str(",250");
+          break;
+        case BW500:
+          debug_str(",500");
+          break;
+        default:
+          debug_str(",ERR");
+          break;    
+    }
+    debug_str(",");
+    debug_hex(LMIC.frame[4]);
+    debug_str(",");
+    debug_hex(LMIC.frame[6]); //number of packets send per parameter
+    debug_str(",");
+    debug_hex(LMIC.frame[7]);
+    
+}
+// a modifier dans le lmic
+static void processRx2Jacc (xref2osjob_t osjob) {
     if (LMIC.dataLen == 0) {
         LMIC.txrxFlags = 0;  // nothing in 1st/2nd DN slot
         reportEvent(EV_RXCOMPLETE);
     } else {
-        debug_str("\r\n Received join response:");
-        debug_buf(LMIC.frame + LMIC.dataBeg, LMIC.dataLen);
+        //debug_str("\r\n Received join response:");      
+        //debug_buf(LMIC.frame,   LMIC.dataLen);
+        //debug_val(" val \r\n", LMIC.frame[0]);
+        if(LMIC.frame[LMIC.dataBeg] == 0){             
+             setParamRx(0,869525000, SF12, BW125, DR_SF12);
+        }else if(LMIC.frame[LMIC.dataBeg] == 1){
+          read_package();
+        }else if(LMIC.frame[LMIC.dataBeg] == 2){
+            write_results();
+            change_reception_parameters();
+            counter = 0;
+            snr = 0;
+        }else if(LMIC.frame[LMIC.dataBeg] == 3){
+            write_results();
+            debug_str("Test Finished");
+        }
         //processJoinAccept();
         LMIC.devaddr = 1;
-        initDefaultChannels(0);
-        LMIC.opmode &= ~(OP_JOINING|OP_TRACK|OP_REJOIN|OP_TXRXPEND|OP_PINGINI) | OP_NEXTCHNL;
-        stateJustJoined();
-        reportEvent(EV_JOINED);
+        reportEvent(EV_RXCOMPLETE);
     }
 }
+
 
 static void setupRx2Jacc (xref2osjob_t osjob) {
     LMIC.osjob.func = FUNC_ADDR(processRx2Jacc);
@@ -1764,7 +1959,6 @@ static void engineUpdate (void) {
         LMIC_startJoining();
         return;
     }
-
     ostime_t now    = os_getTime();
     ostime_t rxtime = 0;
     ostime_t txbeg  = 0;
@@ -1774,7 +1968,6 @@ static void engineUpdate (void) {
         ASSERT( now + RX_RAMPUP - LMIC.bcnRxtime <= 0 );
         rxtime = LMIC.bcnRxtime - RX_RAMPUP;
     }
-
     if( (LMIC.opmode & (OP_JOINING|OP_REJOIN|OP_TXDATA|OP_POLL)) != 0 ) {
         // Need to TX some data...
         // Assuming txChnl points to channel which first becomes available again.
@@ -1786,7 +1979,6 @@ static void engineUpdate (void) {
         } else {
             txbeg = LMIC.txend;
         }
-       
         // Delayed TX or waiting for duty cycle?
         if( (LMIC.globalDutyRate != 0 || (LMIC.opmode & OP_RNDTX) != 0)  &&  (txbeg - LMIC.globalDutyAvail) < 0 )
             txbeg = LMIC.globalDutyAvail;
@@ -1835,8 +2027,7 @@ static void engineUpdate (void) {
                     // Do not run RESET event callback from here!
                     // App code might do some stuff after send unaware of RESET.
                     goto reset;
-                }
-                                
+                }       
                 if (LMIC.message_type == 2){ //End Message - The data to be transfered is the parameters used for the test
                     
                     int end = 0;
@@ -1854,26 +2045,10 @@ static void engineUpdate (void) {
                     
                     os_copyMem(LMIC.pendTxData+end,&LMIC.txpow, 1); //Power is represented by 1 byte
                     end += sizeof(s1_t);
-                   /* debug_val("coderate = ", LMIC.errcr);
-                    
-                    debug_val("SF = ", LMIC.datarate);
-                    
-                    debug_val("BW = ", bw);
-                    
-                    debug_val("pow = ", LMIC.txpow);
-                    
-                    debug_val("LMIC.coderate = ", *LMIC.pendTxData);
-                    
-                    debug_val("LMIC.SF = ", *(LMIC.pendTxData+sizeof(s1_t)));
-                    
-                    debug_val("LMIC.BW = ", *(LMIC.pendTxData+2*sizeof(s1_t)));
-                    
-                    debug_val("LMIC.pow = ", *(LMIC.pendTxData+3*sizeof(s1_t)));
-                    */
+
                     LMIC.pendTxLen = end; 
                     
                 }
-                
                 buildDataFrame2();
                 LMIC.osjob.func = FUNC_ADDR(updataDone);
             }
@@ -1883,9 +2058,7 @@ static void engineUpdate (void) {
             setTxParameters() */
             
             //debug_str("Changing LMIC.rps");
-
             if ((LMIC.opmode & OP_JOINING) != 0) { // if joining
-                //debug_str(" (joining).\r\n");
                 LMIC.rps = setCr(updr2rps(txdr), (cr_t)LMIC.errcr);
 
             }
@@ -1897,7 +2070,6 @@ static void engineUpdate (void) {
                 debug_val("BW(tx) = ", getBw(LMIC.tx_rps));
                 debug_val("BW(rps) =", getBw(LMIC.rps));*/
             }
-            
             //LMIC.rps = setCr(updr2rps(txdr), (cr_t)LMIC.errcr);
 
             LMIC.dndr   = txdr;  // carry TX datarate (can be != LMIC.datarate) over to txDone/setupRx1
@@ -1917,7 +2089,6 @@ static void engineUpdate (void) {
         if( (LMIC.opmode & OP_TRACK) == 0 )
             return;
     }
-
     // Are we pingable?
   checkrx:
     if( (LMIC.opmode & OP_PINGINI) != 0 ) {
@@ -2028,8 +2199,9 @@ void LMIC_clrTxData (void) {
 void LMIC_setTxData (void) {
     
     LMIC.opmode |= OP_TXDATA;
-    if( (LMIC.opmode & OP_JOINING) == 0 )
-        LMIC.txCnt = 0;             // cancel any ongoing TX/RX retries
+    if( (LMIC.opmode & OP_JOINING) == 0 ){
+              LMIC.txCnt = 0;
+    }            // cancel any ongoing TX/RX retries
     engineUpdate();
 }
 
