@@ -1096,10 +1096,10 @@ static void setupRx2 (void) {
     }  
     LMIC.freq = LMIC.dn2Freq;
     LMIC.dataLen = 0;
-    debug_val("freq : ", LMIC.dn2Freq);
-    debug_val("cr : ", LMIC.errcr);
-    debug_val("sf : ", LMIC.datarate);
-    debug_val("bw : ", getBw(LMIC.rps));
+    //debug_val("freq : ", LMIC.dn2Freq);
+    //debug_val("cr : ", LMIC.errcr);
+    //debug_val("sf : ", LMIC.datarate);
+    //debug_val("bw : ", getBw(LMIC.rps));
     os_radio(RADIO_RXON); //TODO a modifier selon uplink ou downlink
 }
 
@@ -1245,6 +1245,7 @@ void init_print(void){
 static void read_package(){
     snr += LMIC.snr;
     buffer[counter]=LMIC.snr;
+    debug_str("-------------\n\r");
     counter++;
     
    // setParamRx(CR_4_5,869525000, SF12, BW125, DR_SF12);
@@ -1252,10 +1253,10 @@ static void read_package(){
 
 // a modifier dans le lmic
 static void change_reception_parameters(){
-    debug_val("freq : ", LMIC.dn2Freq);
-    debug_val("cr : ", LMIC.errcr);
-    debug_val("sf : ", LMIC.datarate);
-    debug_val("bw : ", getBw(LMIC.rps));
+    //debug_val("freq : ", LMIC.dn2Freq);
+    //debug_val("cr : ", LMIC.errcr);
+    //debug_val("sf : ", LMIC.datarate);
+    //debug_val("bw : ", getBw(LMIC.rps));
     cr_t cr;
     enum _sf_t sf;
     bw_t bw;
@@ -1316,12 +1317,12 @@ static void change_reception_parameters(){
     }
     power  = LMIC.frame[4];
     freq = EU868_F6;
-    debug_str("\r\n changement de paramètre");
-    debug_val("freq : ", freq);
-    debug_val("cr : ", cr);
-    debug_val("sf : ", sf);
-    debug_val("bw : ", bw);
-    if(LMIC.dataLen == 5){
+    //debug_str("\r\n changement de paramètre");
+    //debug_val("freq : ", freq);
+    //debug_val("cr : ", cr);
+    //debug_val("sf : ", sf);
+    //debug_val("bw : ", bw);
+    if(LMIC.dataLen == 0x0E){
       debug_str("\r\n ok");
         //setTxParameters(CR_4_5,DR_SF12, SF12,14, BW125,EU868_F6);
         LMIC.message_type=END_MESSAGE;
@@ -1330,6 +1331,7 @@ static void change_reception_parameters(){
         //LMIC.opmode=0x000000800;
         setParamRx(cr,freq, sf, bw, dr);
     }else{
+        debug_val("LMIC.DATALEN ==", LMIC.dataLen);
         debug_str(" Problem with parameters changing");
     }    
 }
@@ -1337,10 +1339,75 @@ static void change_reception_parameters(){
 
 static void write_results(void){
     int moy_snr = snr / counter;
-    debug_val("snr\r\n", moy_snr);
-  
+    //Average SNR
+    debug_hex(moy_snr);
+    //Num of packets
+    debug_str(",");
+    debug_hex(counter);
+    //Code rate
+    switch(LMIC.errcr){
+        case CR_4_5:
+          debug_str(",4/5");
+          break;
+        case CR_4_6:
+          debug_str(",4/6");
+          break;
+        case CR_4_7:
+          debug_str(",4/7");
+          break;
+        case CR_4_8:
+          debug_str(",4/8");
+          break;
+        default:
+          debug_str(",ERR");
+          break;
+    }
+    //Data rate
+    switch(LMIC.datarate){
+        case DR_SF12:
+          debug_str(",SF12");
+          break;
+        case DR_SF11:
+          debug_str(",SF11");
+          break;
+        case DR_SF10:
+          debug_str(",SF10");
+          break;
+        case DR_SF9:
+          debug_str(",SF9");
+          break;
+        case DR_SF8:
+          debug_str(",SF8");
+          break;
+        case DR_SF7:
+          debug_str(",SF7");
+          break;
+        default:
+          debug_str(",ERR");
+          break;
+    }//Bandwith
+    switch(getBw(LMIC.rps)){
+        case BW125:
+          debug_str(",125");
+          break;
+        case BW250:
+          debug_str(",250");
+          break;
+        case BW500:
+          debug_str(",500");
+          break;
+        default:
+          debug_str(",ERR");
+          break;    
+    }
+    debug_str(",");
+    debug_hex(LMIC.frame[4]);
+    debug_str(",");
+    debug_hex(LMIC.frame[6]); //number of packets send per parameter
+    debug_str(",");
+    debug_hex(LMIC.frame[7]);
+    
 }
-
 // a modifier dans le lmic
 static void processRx2Jacc (xref2osjob_t osjob) {
     if (LMIC.dataLen == 0) {
@@ -1350,17 +1417,18 @@ static void processRx2Jacc (xref2osjob_t osjob) {
         //debug_str("\r\n Received join response:");      
         //debug_buf(LMIC.frame,   LMIC.dataLen);
         //debug_val(" val \r\n", LMIC.frame[0]);
-        if(LMIC.frame[LMIC.dataBeg] == 0){
-             counter = 0;
-             snr = 0;
+        if(LMIC.frame[LMIC.dataBeg] == 0){             
              setParamRx(0,869525000, SF12, BW125, DR_SF12);
         }else if(LMIC.frame[LMIC.dataBeg] == 1){
-            read_package();
+          read_package();
         }else if(LMIC.frame[LMIC.dataBeg] == 2){
-            change_reception_parameters();
             write_results();
-        }else{
-          
+            change_reception_parameters();
+            counter = 0;
+            snr = 0;
+        }else if(LMIC.frame[LMIC.dataBeg] == 3){
+            write_results();
+            debug_str("Test Finished");
         }
         //processJoinAccept();
         LMIC.devaddr = 1;
