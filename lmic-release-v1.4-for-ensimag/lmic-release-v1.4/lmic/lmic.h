@@ -274,6 +274,9 @@ void LMIC_setLinkCheckMode (bit_t enabled);
 
 void setTxParameters (enum _cr_t newErrcr, enum _dr_eu868_t newDr,
  enum _sf_t newSF, s1_t newPow, enum _bw_t newBw, u4_t newFreq);
+void setParamRx(cr_t  newErrcr, u4_t newFreq,enum _sf_t newSF , bw_t newBw , dr_t newDr);
+void receive_packet();
+
 
 // Special APIs - for development or testing
 // !!!See implementation for caveats!!!

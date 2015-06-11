@@ -1091,20 +1091,13 @@ static bit_t decodeFrame (void) {
 
 
 static void setupRx2 (void) {
- 
-             
-    //debug_str("-");
     LMIC.txrxFlags = TXRX_DNW2;
     if ((LMIC.opmode & OP_JOINING) != 0) { // if joining                
         LMIC.rps = dndr2rps(LMIC.dn2Dr);
     }  
     LMIC.freq = LMIC.dn2Freq;
     LMIC.dataLen = 0;
-    //debug_val("freq : ", LMIC.dn2Freq);
-    //debug_val("cr : ", LMIC.errcr);
-    //debug_val("sf : ", LMIC.datarate);
-    //debug_val("bw : ", getBw(LMIC.rps));
-    os_radio(RADIO_RXON); //TODO a modifier selon uplink ou downlink
+    os_radio(RADIO_RXON);
 }
 
 
@@ -1242,26 +1235,20 @@ static bit_t processJoinAccept (void) {
 }
 
 void init_print(void){
-  debug_str("\rDOWNLINK\r\nsnr,pkt_count,crc,dr,bw,pow,avg_time,size,msgs_per_setting,test_type\r\n");  
+  debug_str("snr,pkt_count,crc,dr,bw,pow,avg_time,size,msgs_per_setting,test_type,std_dev_time,std_dev_snr\r");  
 }
 
-// a modifier dans le lmic
+//Treat the informations taken from the normal messages
 static void read_package(){
     rx_time[counter] = osticks2ms(os_getTime());
     rx_snr[counter] = LMIC.snr;    
     snr += LMIC.snr;
     message_size = LMIC.dataLen;    
     counter++;
-    
-   // setParamRx(CR_4_5,869525000, SF12, BW125, DR_SF12);
 }
 
-// a modifier dans le lmic
+// Function responsable for updating the parameters with the parameters received in the last mensage
 static void change_reception_parameters(){
-    //debug_val("freq : ", LMIC.dn2Freq);
-    //debug_val("cr : ", LMIC.errcr);
-    //debug_val("sf : ", LMIC.datarate);
-    //debug_val("bw : ", getBw(LMIC.rps));
     cr_t cr;
     enum _sf_t sf;
     bw_t bw;
@@ -1284,7 +1271,7 @@ static void change_reception_parameters(){
             break;
         default : break;  
     }
-    switch(LMIC.frame[2]){
+    switch(LMIC.frame[2]){ //Spreading Factor
         case 0x2 : sf = SF7;
             dr = DR_SF7;
             break;
@@ -1307,7 +1294,7 @@ static void change_reception_parameters(){
         default :        
             break;  
     }
-    switch(LMIC.frame[3]){
+    switch(LMIC.frame[3]){ //Bandwidth
         case 3 : 
             bw = BW125;
             break;
@@ -1320,22 +1307,13 @@ static void change_reception_parameters(){
         default : 
           break;  
     }
-    power  = LMIC.frame[4];
+    power  = LMIC.frame[4]; //power
     freq = EU868_F6;
-    //debug_str("\r\n changement de paramètre");
-    //debug_val("freq : ", freq);
-    //debug_val("cr : ", cr);
-    //debug_val("sf : ", sf);
-    //debug_val("bw : ", bw);
     if(LMIC.dataLen == 8){
-      //debug_str("\r\n ok");
-        //setTxParameters(CR_4_5,DR_SF12, SF12,14, BW125,EU868_F6);
         LMIC.message_type=END_MESSAGE;
         u1_t data = 1;
-        //LMIC_setTxData2(1,&data,1,0);
-        //LMIC.opmode=0x000000800;
         setParamRx(cr,freq, sf, bw, dr);
-    }else{
+    }else{ //if the message has a size different than eight, the message is corrupted, therefore we dont make the update
         debug_val("LMIC.DATALEN ==", LMIC.dataLen);
         debug_str(" Problem with parameters changing");
     }    
@@ -1345,7 +1323,7 @@ static void change_reception_parameters(){
 static void write_results(void){
     s4_t moy_snr = snr / counter;
     //Average SNR
-    debug_str("\n\r");
+    debug_str("\r\n");
     debug_uint(moy_snr);
     //Num of packets
     debug_str(",");
@@ -1407,7 +1385,7 @@ static void write_results(void){
           break;    
     }
     debug_str(",");
-    debug_hex(rx_power); // pow
+    debug_hex(rx_power); // power
     debug_str(",");
     int i;
     //average time
@@ -1425,7 +1403,7 @@ static void write_results(void){
     //std dev of time
     
     s4_t variance = 0;
-    for (i = 1; i < counter; i++)
+    for (i = 1; i < counter; i++)//time variance
         variance += ((rx_time[i] - rx_time[i-1]) - average_time) * ((rx_time[i]-rx_time[i-1]) - average_time);
     variance /= (counter-1);
     
@@ -1433,7 +1411,7 @@ static void write_results(void){
     u4_t x = 0;
     while(1) {
         if (x*x > variance) {
-            std_deviation = i;
+            std_deviation = i; //std deviation
             break;
         } else {
             x++;
@@ -1442,18 +1420,18 @@ static void write_results(void){
     }
     debug_str(",");
     debug_uint(variance);  
-    //std snr
+
     variance = 0;
     std_deviation = 0;
     x = 0;
     
-    for (i = 0; i < counter; i++)
+    for (i = 0; i < counter; i++) //variance of snr
         variance += (rx_snr[i] - moy_snr) * (rx_snr[i] - moy_snr);
       variance /= (counter);
     
     while(1) {
         if (x*x > variance) {
-            std_deviation = x;
+            std_deviation = x; //std dev of snr
             break;
         } else {
             x++;
@@ -1476,14 +1454,14 @@ static void processRx2Jacc (xref2osjob_t osjob) {
         }else if(LMIC.frame[LMIC.dataBeg] == 1){ //Normal message
           read_package();
         }else if(LMIC.frame[LMIC.dataBeg] == 2){ //
-            write_results();
+            if (counter!=0)  
+                write_results();
             change_reception_parameters();
             counter = 0;
             snr = 0;
-            rx_power = LMIC.frame[4];
-        }else if(LMIC.frame[LMIC.dataBeg] == 3){
+            rx_power = LMIC.frame[4]; //we save the power to print after
+        }else if(LMIC.frame[LMIC.dataBeg] == 3){ //end of the test
             write_results();
-            debug_str("\n\rTest Finished");
         }
         LMIC.devaddr = 1;
         reportEvent(EV_RXCOMPLETE);
