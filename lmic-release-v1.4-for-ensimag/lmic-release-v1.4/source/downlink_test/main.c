@@ -82,20 +82,6 @@ int main () {
 static osjob_t blinkjob;
 static u1_t ledstate = 0;
 
-void setParamRx(cr_t  newErrcr, u4_t newFreq,enum _sf_t newSF , bw_t newBw , dr_t newDr){
-    LMIC.dn2Freq = newFreq;
-    LMIC.errcr = newErrcr;
-    LMIC.datarate = newDr;
-    LMIC.dn2Dr = newDr;
-    LMIC.rps = setSf(LMIC.rps, newSF);
-    LMIC.rps = setBw(LMIC.rps, newBw);
-}
-
-
-static void receive_packet(){  
-    LMIC_setRxData();    
-}
-
 static void blinkfunc (osjob_t* j) {
     // toggle LED
     ledstate = !ledstate;

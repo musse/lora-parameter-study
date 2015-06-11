@@ -143,6 +143,7 @@ s4_t counter;
 s4_t snr;
 s4_t rx_snr[MAX_MSGS];
 s4_t message_size;
+s4_t rx_power;
 
 static void micB0 (u4_t devaddr, u4_t seqno, int dndir, int len) {
     os_clearMem(AESaux,16);
@@ -1249,7 +1250,7 @@ static void read_package(){
     rx_time[counter] = osticks2ms(os_getTime());
     rx_snr[counter] = LMIC.snr;    
     snr += LMIC.snr;
-    message_size = LMIC.dataLen;
+    message_size = LMIC.dataLen;    
     counter++;
     
    // setParamRx(CR_4_5,869525000, SF12, BW125, DR_SF12);
@@ -1406,7 +1407,7 @@ static void write_results(void){
           break;    
     }
     debug_str(",");
-    debug_hex(LMIC.frame[4]); // pow
+    debug_hex(rx_power); // pow
     debug_str(",");
     int i;
     //average time
@@ -1464,29 +1465,26 @@ static void write_results(void){
     
     
 }
-// a modifier dans le lmic
+//Treat the data received in RX2
 static void processRx2Jacc (xref2osjob_t osjob) {
     if (LMIC.dataLen == 0) {
         LMIC.txrxFlags = 0;  // nothing in 1st/2nd DN slot
         reportEvent(EV_RXCOMPLETE);
     } else {
-        //debug_str("\r\n Received join response:");      
-        //debug_buf(LMIC.frame,   LMIC.dataLen);
-        //debug_val(" val \r\n", LMIC.frame[0]);
-        if(LMIC.frame[LMIC.dataBeg] == 0){             
+        if(LMIC.frame[LMIC.dataBeg] == 0){//Join response             
              setParamRx(0,869525000, SF12, BW125, DR_SF12);
-        }else if(LMIC.frame[LMIC.dataBeg] == 1){
+        }else if(LMIC.frame[LMIC.dataBeg] == 1){ //Normal message
           read_package();
-        }else if(LMIC.frame[LMIC.dataBeg] == 2){
+        }else if(LMIC.frame[LMIC.dataBeg] == 2){ //
             write_results();
             change_reception_parameters();
             counter = 0;
             snr = 0;
+            rx_power = LMIC.frame[4];
         }else if(LMIC.frame[LMIC.dataBeg] == 3){
             write_results();
             debug_str("\n\rTest Finished");
         }
-        //processJoinAccept();
         LMIC.devaddr = 1;
         reportEvent(EV_RXCOMPLETE);
     }
@@ -1500,6 +1498,8 @@ static void setupRx2Jacc (xref2osjob_t osjob) {
 
 /*
 -------------SUPPRESSION DU RX1---------------------
+
+***We supressed the windows of receive RX1 in order to use only one by reception (RX2)***
 
 #define setRx1Params() {                                                \
     LMIC.freq = US915_500kHz_DNFBASE + (LMIC.txChnl & 0x7) * US915_500kHz_DNFSTEP; \
@@ -1705,10 +1705,8 @@ static void buildDataFrame (void) {
     LMIC.dataLen = flen;
 }
 /**
-On fixe les id dans le fichier id.h
-Nous n'avons pas besoin de faire une fonction très générique,
-car elle ne servira uniquement à nos test pour analyser nos résultats.
-On envoie le message exacte que l'on veut, buildDataFrame envoyer des données que l'on ne maitrisait pas.
+We fix the id in the fichier id.h.
+We don't have need to do a more generic function because it will be used only for testing and analysing our results
 */
 static void buildDataFrame2 () {
   
@@ -1900,7 +1898,10 @@ static bit_t processDnData (void) {
         reportEvent(EV_RXCOMPLETE);
         // If we haven't heard from NWK in a while although we asked for a sign
         // assume link is dead - notify application and keep going
-       /* if( LMIC.adrAckReq > LINK_CHECK_DEAD ) {
+       
+        //This part was taken off the code because we changed the way the join works. As we don't use a continuous communication with the server, we will
+        //always have a link dead after a few seconds.
+        /* if( LMIC.adrAckReq > LINK_CHECK_DEAD ) {
             // We haven't heard from NWK for some time although we
             // asked for a response for some time - assume we're disconnected. Lower DR one notch.
             EV(devCond, ERR, (e_.reason = EV::devCond_t::LINK_DEAD,
@@ -2089,9 +2090,7 @@ static void engineUpdate (void) {
                     int end = 0;
                     os_copyMem(LMIC.pendTxData+end,&LMIC.errcr, sizeof(enum _cr_t));
                     end += sizeof(u1_t);
-                    
-                    //enum _sf_t sf = getSf(LMIC.rps);
-                    
+                                    
                     os_copyMem(LMIC.pendTxData+end, &LMIC.datarate, sizeof(LMIC.datarate));
                     end += sizeof(LMIC.datarate);
                     
@@ -2113,20 +2112,14 @@ static void engineUpdate (void) {
             pre-defined options of the array _DR2RPS_CRC[]. Our TX RPS is defined in LMIC.tx_rps, and was set by
             setTxParameters() */
             
-            //debug_str("Changing LMIC.rps");
+            
             if ((LMIC.opmode & OP_JOINING) != 0) { // if joining
                 LMIC.rps = setCr(updr2rps(txdr), (cr_t)LMIC.errcr);
 
             }
             else {
-                //debug_str(" (not joining).\r\n");
                 LMIC.rps = LMIC.tx_rps;
-                /*debug_val("LMIC.RPS = ", LMIC.rps);
-                debug_val("LMIC.tx_rps =", LMIC.tx_rps);
-                debug_val("BW(tx) = ", getBw(LMIC.tx_rps));
-                debug_val("BW(rps) =", getBw(LMIC.rps));*/
             }
-            //LMIC.rps = setCr(updr2rps(txdr), (cr_t)LMIC.errcr);
 
             LMIC.dndr   = txdr;  // carry TX datarate (can be != LMIC.datarate) over to txDone/setupRx1
             LMIC.opmode = (LMIC.opmode & ~(OP_POLL|OP_RNDTX)) | OP_TXRXPEND | OP_NEXTCHNL;
@@ -2191,8 +2184,6 @@ void LMIC_setAdrMode (bit_t enabled) {
     LMIC.adrEnabled = enabled ? FCT_ADREN : 0;
 }
 
-
-//  Should we have/need an ext. API like this?
 void LMIC_setDrTxpow (dr_t dr, s1_t txpow) {
     setDrTxpow(DRCHG_SET, dr, txpow);
 }
@@ -2251,7 +2242,7 @@ void LMIC_clrTxData (void) {
     engineUpdate();
 }
 
-
+//Send the data predefined in the LMIC struct 
 void LMIC_setTxData (void) {
     
     LMIC.opmode |= OP_TXDATA;
@@ -2262,7 +2253,7 @@ void LMIC_setTxData (void) {
 }
 
 
-//
+//Choose and prepare the data to be sent
 int LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) { 
     if( dlen > SIZEOFEXPR(LMIC.pendTxData) )
         return -2;
@@ -2274,7 +2265,7 @@ int LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) {
     LMIC_setTxData();
     return 0;
 }
-
+//Prepare the node for receiving data
 void  LMIC_setRxData(void){
   txDone(0,setupRx2Jacc);
 }
@@ -2336,8 +2327,8 @@ void LMIC_setLinkCheckMode (bit_t enabled) {
     LMIC.adrAckReq = enabled ? LINK_CHECK_INIT : LINK_CHECK_OFF;
 }
 
-// Our functions
 
+//Set the parameters for sending messages
 void setTxParameters (enum _cr_t newErrcr, enum _dr_eu868_t newDr,
  enum _sf_t newSF, s1_t newPow, enum _bw_t newBw, u4_t newFreq) {
     LMIC.errcr = newErrcr;
@@ -2355,4 +2346,18 @@ void setTxParameters (enum _cr_t newErrcr, enum _dr_eu868_t newDr,
     LMIC_setupBand(BAND_DECI, newPow, 10); // 10%
     LMIC_setupChannel(TX_CHANNEL, newFreq, DR_RANGE_MAP(newDr,
         newDr), BAND_DECI);
+}
+//Set the parameters for reception of messages
+void setParamRx(cr_t  newErrcr, u4_t newFreq,enum _sf_t newSF , bw_t newBw , dr_t newDr){
+    LMIC.dn2Freq = newFreq;
+    LMIC.errcr = newErrcr;
+    LMIC.datarate = newDr;
+    LMIC.dn2Dr = newDr;
+    LMIC.rps = setSf(LMIC.rps, newSF);
+    LMIC.rps = setBw(LMIC.rps, newBw);
+}
+
+//Function called when we receive a packet (in the downlink test)
+void receive_packet(){  
+    LMIC_setRxData();    
 }
