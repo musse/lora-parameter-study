@@ -51,7 +51,7 @@ Maintainer: Sylvain Miermont
 /* -------------------------------------------------------------------------- */
 /* --- PRIVATE MACROS ------------------------------------------------------- */
 
-#define CRC_TEST // POW_TEST, CRC_TEST, SIZE_TEST, BW_TEST
+#define SIZE_TEST // POW_TEST, CRC_TEST, SIZE_TEST, BW_TEST , SF_TEST
 
 #ifdef POW_TEST
     #define UPDATE_TEST() test_power()
@@ -530,11 +530,11 @@ void construct_start_msg(uint8_t bandwidth, uint8_t coderate, uint8_t datarate, 
 	memcpy(join_response.payload+end, &size, sizeof(size));
 	end += sizeof(size);
 	uint8_t msg_per_setting = MSG_PER_SETTING;
-	memcpy(join_response.payload+end, &msg_per_setting, sizeof(MSG_PER_SETTING));
-	end += sizeof(MSG_PER_SETTING);
+	memcpy(join_response.payload+end, &msg_per_setting, sizeof(msg_per_setting));
+	end += sizeof(msg_per_setting);
 	uint8_t test_number = TEST_NB;
-	memcpy(join_response.payload+end, &test_number, sizeof(TEST_NB));
-	end += sizeof(TEST_NB);
+	memcpy(join_response.payload+end, &test_number, sizeof(test_number));
+	end += sizeof(test_number);
 	join_response.size = end;
 	
 }
@@ -580,19 +580,20 @@ void wait_response(){
 void test_packet(){
 	int i,j,next_packet_size;
 	sleep(6);
-	for(i=0 ; i < 10 ; i ++){
+	for(i=1 ; i < 10 ; i ++){
 		next_packet_size = i*5;
 		construct_start_msg(join_response.bandwidth, join_response.coderate,join_response.datarate, 14, next_packet_size);
 		lgw_send(join_response);		
 		sleep(1);
-		join_response.size=next_packet_size;	
-		for(j=0 ; j < 30 ; j++){
-			sleep(1);
-			construct_msg();
+		join_response.payload[0] = 1;
+ 		join_response.size=next_packet_size;	
+		for(j=0 ; j < MSG_PER_SETTING ; j++){
+			sleep(2);
 			lgw_send(join_response);
 		}	
-		sleep(1);	
+		sleep(2);	
 	}
+	sleep(2);
 	construct_end_msg();
 	lgw_send(join_response);	
 }
@@ -660,19 +661,19 @@ void test_sf(){
 	sleep(6);
 	for(i=0 ; i < 6 ; i ++){
 		switch(i){
-			case 1 : 
+			case 5 : 
 				next_datarate=DR_LORA_SF7;
 				break;
-			case 2 : 
+			case 4 : 
 				next_datarate=DR_LORA_SF8;
 				break;
 			case 3 : 
 				next_datarate=DR_LORA_SF9;
 				break;
-			case 4 : 
+			case 2 : 
 				next_datarate=DR_LORA_SF10;
 				break;
-			case 5 : 
+			case 1 : 
 				next_datarate=DR_LORA_SF11;
 				break;
 			case 0 : 
@@ -700,7 +701,7 @@ void test_bandwidth(){
 	
 	int i,j,next_bandwidth;
 	sleep(2);
-	for(i=0 ; i < 3 ; i ++){
+	for(i=0 ; i < 2 ; i ++){
 		sleep(1);
 		switch(i){
 			case 0 : 
@@ -708,9 +709,6 @@ void test_bandwidth(){
 				break;
 			case 1 : 
 				next_bandwidth=BW_250KHZ;
-				break;
-			case 2 : 
-				next_bandwidth=BW_500KHZ;
 				break;
 			default : 
 				break;
