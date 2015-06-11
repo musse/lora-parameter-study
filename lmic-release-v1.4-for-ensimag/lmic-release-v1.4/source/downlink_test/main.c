@@ -85,15 +85,11 @@ static u1_t ledstate = 0;
 void setParamRx(cr_t  newErrcr, u4_t newFreq,enum _sf_t newSF , bw_t newBw , dr_t newDr){
     LMIC.dn2Freq = newFreq;
     LMIC.errcr = newErrcr;
-    LMIC.datarate = newSF;
+    LMIC.datarate = newDr;
     LMIC.dn2Dr = newDr;
     LMIC.rps = setSf(LMIC.rps, newSF);
     LMIC.rps = setBw(LMIC.rps, newBw);
-    debug_val("freq : ", LMIC.dn2Freq);
-    debug_val("cr : ", LMIC.errcr);
-    debug_val("sf : ", LMIC.datarate);
-    debug_val("bw : ", getBw(LMIC.rps));
-}  
+}
 
 
 static void receive_packet(){  
@@ -115,12 +111,12 @@ static void blinkfunc (osjob_t* j) {
 
 void onEvent (ev_t ev) {
   
-    debug_event(ev);
+    //debug_event(ev);
     switch(ev) {
         // starting to join network
         case EV_JOINING:
             //debug_event(ev);
-            debug_str("Started joining.\r\n");
+            //debug_str("Started joining.\r\n");
             // start blinking
             blinkfunc(&blinkjob);
             break;

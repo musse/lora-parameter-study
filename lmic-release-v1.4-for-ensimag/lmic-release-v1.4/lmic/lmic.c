@@ -22,6 +22,7 @@
 #define PRERX_FSK  1
 #define RXLEN_FSK  (1+5+2)
 #define LENGTH_TEST 30
+#define MAX_MSGS 100
 
 #define BCN_INTV_osticks       sec2osticks(BCN_INTV_sec)
 #define TXRX_GUARD_osticks     ms2osticks(TXRX_GUARD_ms)
@@ -136,6 +137,12 @@ u2_t os_crc16 (xref2u1_t data, uint len) {
 
 // ================================================================================
 // BEG AES
+//Constants for receive test
+s4_t rx_time[MAX_MSGS] = {0};
+s4_t counter;
+s4_t snr;
+s4_t rx_snr[MAX_MSGS];
+s4_t message_size;
 
 static void micB0 (u4_t devaddr, u4_t seqno, int dndir, int len) {
     os_clearMem(AESaux,16);
@@ -233,10 +240,6 @@ const u1_t _DR2RPS_CRC[] = {
     (u1_t)MAKERPS(FSK,  BW125, CR_4_5, 0, 0),
     ILLEGAL_RPS
 };
-
-int counter;
-int buffer[LENGTH_TEST];
-int snr;
 
 static const s1_t TXPOWLEVELS[] = {
     20, 14, 11, 8, 5, 2, 0,0, 0,0,0,0, 0,0,0,0
@@ -1243,9 +1246,10 @@ void init_print(void){
 
 // a modifier dans le lmic
 static void read_package(){
+    rx_time[counter] = osticks2ms(os_getTime());
+    rx_snr[counter] = LMIC.snr;    
     snr += LMIC.snr;
-    buffer[counter]=LMIC.snr;
-    debug_str("-------------\n\r");
+    message_size = LMIC.dataLen;
     counter++;
     
    // setParamRx(CR_4_5,869525000, SF12, BW125, DR_SF12);
@@ -1322,8 +1326,8 @@ static void change_reception_parameters(){
     //debug_val("cr : ", cr);
     //debug_val("sf : ", sf);
     //debug_val("bw : ", bw);
-    if(LMIC.dataLen == 0x0E){
-      debug_str("\r\n ok");
+    if(LMIC.dataLen == 8){
+      //debug_str("\r\n ok");
         //setTxParameters(CR_4_5,DR_SF12, SF12,14, BW125,EU868_F6);
         LMIC.message_type=END_MESSAGE;
         u1_t data = 1;
@@ -1338,9 +1342,10 @@ static void change_reception_parameters(){
 
 
 static void write_results(void){
-    int moy_snr = snr / counter;
+    s4_t moy_snr = snr / counter;
     //Average SNR
-    debug_hex(moy_snr);
+    debug_str("\n\r");
+    debug_uint(moy_snr);
     //Num of packets
     debug_str(",");
     debug_hex(counter);
@@ -1401,11 +1406,62 @@ static void write_results(void){
           break;    
     }
     debug_str(",");
-    debug_hex(LMIC.frame[4]);
+    debug_hex(LMIC.frame[4]); // pow
+    debug_str(",");
+    int i;
+    //average time
+    s4_t average_time=0;
+    for (i = 1; i < counter; i++)
+      average_time += rx_time[i] - rx_time[i-1];
+    average_time = average_time/(counter-1);
+    debug_uint(average_time);
+    debug_str(",");
+    debug_hex(message_size); //message size
     debug_str(",");
     debug_hex(LMIC.frame[6]); //number of packets send per parameter
     debug_str(",");
-    debug_hex(LMIC.frame[7]);
+    debug_hex(LMIC.frame[7]); //test type
+    //std dev of time
+    
+    s4_t variance = 0;
+    for (i = 1; i < counter; i++)
+        variance += ((rx_time[i] - rx_time[i-1]) - average_time) * ((rx_time[i]-rx_time[i-1]) - average_time);
+    variance /= (counter-1);
+    
+    s4_t std_deviation = 0;
+    u4_t x = 0;
+    while(1) {
+        if (x*x > variance) {
+            std_deviation = i;
+            break;
+        } else {
+            x++;
+            continue;
+        }
+    }
+    debug_str(",");
+    debug_uint(variance);  
+    //std snr
+    variance = 0;
+    std_deviation = 0;
+    x = 0;
+    
+    for (i = 0; i < counter; i++)
+        variance += (rx_snr[i] - moy_snr) * (rx_snr[i] - moy_snr);
+      variance /= (counter);
+    
+    while(1) {
+        if (x*x > variance) {
+            std_deviation = x;
+            break;
+        } else {
+            x++;
+            continue;
+        }
+    }
+    debug_str(",");
+    debug_uint(std_deviation); 
+    
     
 }
 // a modifier dans le lmic
@@ -1428,7 +1484,7 @@ static void processRx2Jacc (xref2osjob_t osjob) {
             snr = 0;
         }else if(LMIC.frame[LMIC.dataBeg] == 3){
             write_results();
-            debug_str("Test Finished");
+            debug_str("\n\rTest Finished");
         }
         //processJoinAccept();
         LMIC.devaddr = 1;
