@@ -15,7 +15,7 @@ base = 16
 y_snr = [float(int(i, base))/4.0 for i in results.snr]
 y_snr_std_dev = [float(int(i, base))/4.0 for i in results.std_dev_snr]
 y_time_std_dev = [int(i, base) for i in results.std_dev_time]
-y_pkt_loss = (numpy.array([(int(results.msgs_per_setting[0], base) - int(i, base)) for i in results['pkt_count']]) / int(results.msgs_per_setting[0], 16)) * 100.0
+y_pkt_loss = (numpy.array([(int(results.msgs_per_setting[0], base) - int(i, base)) for i in results['pkt_count']]) / float(int(results.msgs_per_setting[0], 16))) * 100.0
 y_time = [int(i, base) + randint(-5, 5) for i in results['avg_time']]
 
 
