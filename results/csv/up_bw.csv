@@ -1,0 +1,3 @@
+snr,pkt_count,crc,dr,bw,pow,avg_time,size,msgs_per_setting,test_type,std_dev_time,std_dev_snr
++9.6,5,4/5,SF7,125,14,1185,25,5,1,779,+0.4
++9.7,5,4/5,SF7,250,14,1592,25,5,1,556,+0.4
