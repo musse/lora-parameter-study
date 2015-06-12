@@ -73,6 +73,7 @@ A test sequence is made by varying one of the radio parameters and by fixing the
 ## Limitations
 
 * Even though the LoRa protocol and the test boards support a 500 kHz bandwith, the bandwith test does not currently implements it.
+* It's not possible to use the downlink bandwidth test.
 
 ## Credits
 
