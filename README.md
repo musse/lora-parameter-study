@@ -65,7 +65,7 @@ A test sequence is made by varying one of the radio parameters and by fixing the
 3. Use the makefile to compile all the sources and execute the `util_pkt_logger`.
 4. Connect the node to the Windows machine in which IAR Workbench is installed. 
 5. Open the IAR's project for the node's downlink program, which is located in `lmic-release-v1.4-for-ensimag/lmic-release-v1.4/source/downlink_test/join.eww`.
-6. When the concentrator is ready to receive the join packet (and start seding the data packets after this), compile and upload the node's code with IAR.
+6. When the concentrator is ready to receive the join packet (and start sending the data packets after this), compile and upload the node's code with IAR.
 7. After uploading it to the board, press the reset button to start it. The test will now be executed.
 8. Use a program like RS232 [Port Logger](http://www.eltima.com/products/rs232-data-logger/) to transform the serial exit of the node in a txt file (use a baudrate of 115200)
 9. Use the `gen_downlink.py` to generate the graphics with the data of the txts files. The results can be saved as a image if so desired.
