@@ -17,7 +17,7 @@
 
 // constants to define the test parameters
 
-#define CRC_TEST // POW_TEST, CRC_TEST, SIZE_TEST, BW_TEST
+#define BW_TEST // POW_TEST, CRC_TEST, SIZE_TEST, BW_TEST
 
 #define FIXED_CRC       CR_4_5
 #define FIXED_DR        DR_SF7
@@ -79,6 +79,8 @@
 #define bool            u1_t
 #define false           0
 #define true            1
+
+#define BW_FREQ         EU868_F2
 
 //////////////////////////////////////////////////
 // CONFIGURATION (FOR APPLICATION CALLBACKS BELOW)
@@ -246,20 +248,19 @@ u1_t testBw () {
     static enum _bw_t currentBw;
 
     currentSettings++;
-
     switch (currentSettings) {
         case 1:
             currentBw = BW125; debug_str("BW125"); break;
         case 2:
             currentBw = BW250; debug_str("BW250"); break;
-        case 3:
-            currentBw = BW500; debug_str("BW500"); break;
+        /*case 3:
+            currentBw = BW500; debug_str("BW500"); break;*/
         default:
             return TEST_FINISHED;
     }
 
     setTxParameters(FIXED_CRC, FIXED_DR, FIXED_SF, FIXED_POW, currentBw,
-        FIXED_FREQ);
+        BW_FREQ);
 
     return FIXED_SIZE;
 }
