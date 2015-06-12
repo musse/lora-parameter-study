@@ -18,7 +18,7 @@ We are then able to mesure and identify its influence over the following perform
 * Average transmission time
 * [Packet loss](http://en.wikipedia.org/wiki/Packet_loss)
 
-The test scripts allow to you to make the mesurements both in **uplink** (object to concentrator) and **downlink** (concentrator to object) mode.
+The test scripts allow to you to make the measurements both in **uplink** (object to concentrator) and **downlink** (concentrator to object) mode.
 
 Graphics showing the test's results are automatically generated. A `.csv` file with the raw test results is also created. Example results are provided in the folder `xxxxxxxx`.
 
@@ -48,7 +48,7 @@ A test sequence is made by varying one of the radio parameters and by fixing the
 1. Connect the node to the Windows machine in which IAR Workbench is installed. 
 2. Open the IAR's project for the node's uplink program, which is located in `lmic-release-v1.4-for-ensimag/lmic-release-v1.4/source/uplink_test/join.eww`.
 3. In the first lines of the file `lmic-release-v1.4-for-ensimag/lmic-release-v1.4/source/uplink_test/main.c`:
-	1. `#define` the constant corresponding to the desired test: `CRC_TEST`, `POW_TEST`, `CRC_TEST`, `SIZE_TEST` or `BW_TEST`. Only one of them can be defined a a time.
+	1. `#define` the constant corresponding to the desired test: `CRC_TEST`, `POW_TEST`, `CRC_TEST`, `SIZE_TEST` or `BW_TEST`. Only one of them can be defined at a time.
 	2. Change the value of the constants prefixed by `FIXED` to choose the fixed parameters of the test. The fixed value of the parameter which will be varied is not considered.
 	3. Change `MSGS_PER_SETTING` to choose the number of packets sent in each test series.
 4. Connect the concentrator to the Linux machine and execute the `uplink.sh` script located in the `scripts/` folder.
