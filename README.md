@@ -2,9 +2,9 @@
 
 ## Description
 
-This test library allows you to easily mesure the performance of the [**LoRa**](http://lora-alliance.org/What-Is-LoRa/Technology) technology in fonction of the protocol's radio parameters, so that you can adequately choose them for your project.
+This test library allows you to easily measure the performance of the [**LoRa**](http://lora-alliance.org/What-Is-LoRa/Technology) technology according to the protocol's radio parameters so that you can adequately choose them for your project.
 
-By varying one of the following radio parameters (and fixing the others):
+By varying one of the following radio parameters (and keeping the others constant):
 
 * [Code rate](http://en.wikipedia.org/wiki/Code_rate)
 * Spreading factor
